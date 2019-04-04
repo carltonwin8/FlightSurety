@@ -11,7 +11,7 @@ contract FlightSuretyData {
   address private contractOwner; 
   bool private operational = true;
   mapping(address => uint256) private authorizedContracts; 
-  enum AirlineState { Registered, Funded }
+  enum AirlineState { Unregistered, Registered, Funded }
   mapping(address => AirlineState) private airlines;
   mapping(bytes32 => address[]) insuredFlight;
   mapping(bytes32 => uint256) insuredPassanger;
@@ -91,7 +91,6 @@ contract FlightSuretyData {
     return operational;
   }
 
-
   /**
   * @dev Sets contract operations on/off
   * When operational mode is disabled, all write transactions except for this
@@ -102,15 +101,20 @@ contract FlightSuretyData {
     operational = mode;
   }
 
+  function isAirline(address airline) public view requireContractOwner returns(bool)
+  {
+    if (airlines[airline] == AirlineState.Funded) return true;
+    return false;
+  }
   /*************************************************************************/
   /*                                     SMART CONTRACT FUNCTIONS           /
   /*************************************************************************/
-  function authorizedContract(address adr) external requireContractOwner
+  function authorizeCaller(address adr) external requireContractOwner
   {
     authorizedContracts[adr] = 1;
   }
   
-  function deauthorizedContract(address adr) external requireContractOwner
+  function deauthorizeCaller(address adr) external requireContractOwner
   {
       delete authorizedContracts[adr];
   }
@@ -119,9 +123,16 @@ contract FlightSuretyData {
   * @dev Add an airline to the registration queue
   *      Can only be called from FlightSuretyApp contract
   */   
-  function registerAirline() external isCallerAuthorized
+  function registerAirline() external isCallerAuthorized requireIsOperational
   {
     airlines[msg.sender] = AirlineState.Registered;
+  }
+
+  function registerFlight(address airline, string flight, uint256 timestamp) external isCallerAuthorized
+  {
+    bytes32 flightKey = getFlightKey(airline, flight, timestamp);
+    address[] memory adr;
+    insuredFlight[flightKey] = adr;
   }
 
 
@@ -154,7 +165,16 @@ contract FlightSuretyData {
     }
     delete insuredFlight[flightKey];
   }
-  
+
+  /**
+    *  @dev Clear payouts to insurees
+  */
+  function clearInsurees(address airline, string flight, uint256 timestamp) external 
+  requireAirlineFunded(airline)
+  {
+    bytes32 flightKey = getFlightKey(airline, flight, timestamp);
+    delete insuredFlight[flightKey];
+  }
 
   /**
     *  @dev Transfers eligible payout funds to insuree
@@ -171,8 +191,11 @@ contract FlightSuretyData {
   *      flights resulting in insurance payouts, the contract should be
   *      self-sustaining
   */   
-  function fund() public payable isCallerAuthorized
+  function fund() public payable
   {
+    require(msg.value == 10 ether, "Airline insufficently funded");
+    require(airlines[msg.sender] == AirlineState.Registered,
+      "Airline not registered");
     airlines[msg.sender] = AirlineState.Funded;
   }
 
