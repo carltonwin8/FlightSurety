@@ -10,6 +10,7 @@ contract FlightSuretyData {
   /*************************************************************************/
   address private contractOwner; 
   bool private operational = true;
+  uint8 airlinesNo = 0;
   mapping(address => uint256) private authorizedContracts; 
   enum AirlineState { Unregistered, Registered, Funded }
   mapping(address => AirlineState) private airlines;
@@ -116,17 +117,24 @@ contract FlightSuretyData {
   
   function deauthorizeCaller(address adr) external requireContractOwner
   {
-      delete authorizedContracts[adr];
+    delete authorizedContracts[adr];
   }
 
+  event RegisterAirlineD(address by, address arline); 
   /**
   * @dev Add an airline to the registration queue
   *      Can only be called from FlightSuretyApp contract
   */   
-  function registerAirline() external isCallerAuthorized requireIsOperational
+  function registerAirline(address airline) external isCallerAuthorized requireIsOperational
   {
-    airlines[msg.sender] = AirlineState.Registered;
-  }
+    if (airlinesNo == 0) {
+      airlines[msg.sender] = AirlineState.Registered;
+    } else {
+      require(airlines[msg.sender] != AirlineState.Unregistered, "Only previous airlines are allowed to register");
+      airlines[msg.sender] = AirlineState.Registered;
+    }
+    emit RegisterAirlineD(msg.sender, airline);
+}
 
   function registerFlight(address airline, string flight, uint256 timestamp) external isCallerAuthorized
   {
@@ -186,6 +194,7 @@ contract FlightSuretyData {
     contractOwner.transfer(payout);
   }
 
+  event Funded(address airline);
   /**
   * @dev Initial funding for the insurance. Unless there are too many delayed
   *      flights resulting in insurance payouts, the contract should be
@@ -197,6 +206,7 @@ contract FlightSuretyData {
     require(airlines[msg.sender] == AirlineState.Registered,
       "Airline not registered");
     airlines[msg.sender] = AirlineState.Funded;
+    emit Funded(msg.sender);
   }
 
   function getFlightKey ( 

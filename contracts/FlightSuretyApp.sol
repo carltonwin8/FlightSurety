@@ -10,7 +10,7 @@ contract FlightSuretyData {
   function setOperatingStatus(bool mode) external; 
   function authorizedContract(address adr) external;
   function deauthorizedContract(address adr) external;
-  function registerAirline() external;
+  function registerAirline(address airline) external;
   function fund() public payable;
   function registerFlight(address airline, string flight, uint256 timestamp) external;
   function buy(address airline, string flight, uint256 timestamp) external;
@@ -106,21 +106,25 @@ contract FlightSuretyApp {
   /*                                     SMART CONTRACT FUNCTIONS              /
   /****************************************************************************/
 
+  event RegisterAirlineA(address by, address arline); 
   /**
   * @dev Add an airline to the registration queue
   */   
-  function registerAirline() external returns(bool success, uint256 votes)
+  function registerAirline(address airline) external returns(bool success, uint256 votes)
   {
-    flightSuretyData.registerAirline();
+    flightSuretyData.registerAirline(airline);
+    emit RegisterAirlineA(msg.sender, airline);
     return (success, 0);
   }
 
+  event Funded(address airline, uint256);
   /**
   * @dev Fund an airline in the registration queue
   */   
-  function fundAirline() external
+  function fundAirline() payable external
   {
-    flightSuretyData.fund();
+    emit Funded(msg.sender, msg.value);
+    //flightSuretyData.fund();
   }
 
 

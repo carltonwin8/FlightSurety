@@ -1,6 +1,17 @@
 var Test = require("../config/testConfig.js");
 var BigNumber = require("bignumber.js");
 
+const showEvents = logs => {
+  let outStr = "";
+  logs.forEach(log => {
+    outStr += log.event + "\n";
+    for (var key in log.args) {
+      if (key !== "__length__")
+        if (Number(key) != key) outStr += `\t${key} ${log.args[key]}\n`;
+    }
+  });
+  console.log(outStr);
+};
 contract("Flight Surety Tests", async accounts => {
   var config;
   before("setup contract", async () => {
@@ -13,14 +24,14 @@ contract("Flight Surety Tests", async accounts => {
   /****************************************************************************************/
   /* Operations and Settings                                                              */
   /****************************************************************************************/
-
-  it(`(multiparty) has correct initial isOperational() value`, async function() {
+  /*
+  it(`(multiparty) has correct initial isOperational() value`, async () => {
     // Get operating status
     let status = await config.flightSuretyData.isOperational.call();
     assert.equal(status, true, "Incorrect initial operating status value");
   });
 
-  it(`(multiparty) can block access to setOperatingStatus() for non-Contract Owner account`, async function() {
+  it(`(multiparty) can block access to setOperatingStatus() for non-Contract Owner account`, async () => {
     // Ensure that access is denied for non-Contract Owner account
     let accessDenied = false;
     try {
@@ -33,7 +44,7 @@ contract("Flight Surety Tests", async accounts => {
     assert.equal(accessDenied, true, "Access not restricted to Contract Owner");
   });
 
-  it(`(multiparty) can allow access to setOperatingStatus() for Contract Owner account`, async function() {
+  it(`(multiparty) can allow access to setOperatingStatus() for Contract Owner account`, async () => {
     // Ensure that access is allowed for Contract Owner account
     let accessDenied = false;
     try {
@@ -48,7 +59,7 @@ contract("Flight Surety Tests", async accounts => {
     );
   });
 
-  it(`(multiparty) can block access to functions using requireIsOperational when operating status is false`, async function() {
+  it(`(multiparty) can block access to functions using requireIsOperational when operating status is false`, async () => {
     await config.flightSuretyData.setOperatingStatus(false);
 
     let reverted = false;
@@ -62,19 +73,20 @@ contract("Flight Surety Tests", async accounts => {
     // Set it back for other tests to work
     await config.flightSuretyData.setOperatingStatus(true); //nonce issue here
   });
-  /*
+  */
   it("(airline) cannot register an Airline using registerAirline() if it is not funded", async () => {
     // ARRANGE
     let newAirline = accounts[2];
 
     // ACT
     try {
-      await config.flightSuretyData.setOperatingStatus(true);
-
-      await config.flightSuretyApp.registerAirline(newAirline, {
+      const tx = await config.flightSuretyApp.registerAirline(newAirline, {
         from: config.firstAirline
       });
-    } catch (e) {}
+      console.log("tx", tx);
+    } catch (e) {
+      console.log("error", e);
+    }
     let result = await config.flightSuretyData.isAirline.call(newAirline);
 
     // ASSERT
@@ -85,28 +97,33 @@ contract("Flight Surety Tests", async accounts => {
     );
   });
 
-
+  /*
   it("(airline) can register an Airline using registerAirline() if it is funded", async () => {
     // ARRANGE
     let newAirline = accounts[2];
 
     // ACT
     try {
+      const from = config.firstAirline;
+      const tx1 = await config.flightSuretyApp.registerAirline(newAirline, {
+        from
+      });
+      console.log(tx1.logs);
+      showEvents(tx1.logs);
       const value = web3.utils.toWei("10", "ether");
       await config.flightSuretyApp.fundAirline({ value });
-      const from = config.firstAirline;
-      await config.flightSuretyApp.registerAirline(newAirline, { from });
     } catch (e) {
       assert.equal(true, false, "Failed Funding Airline." + e.message);
     }
+    
     let result = await config.flightSuretyData.isAirline.call(newAirline);
     console.log("result", result);
-    // ASSERT
-    assert.equal(
-      result,
-      true,
-      "Airline can register another airline if it hasn provided funding"
-    );
+      // ASSERT
+      assert.equal(
+        result,
+        true,
+        "Airline can register another airline if it hasn provided funding"
+      );
   });
   */
 });
