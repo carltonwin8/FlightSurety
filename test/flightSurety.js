@@ -21,10 +21,10 @@ contract("Flight Surety Tests", async accounts => {
     );
   });
 
-  /****************************************************************************************/
-  /* Operations and Settings                                                              */
-  /****************************************************************************************/
-  /*
+  /***************************************************************************/
+  /* Operations and Settings                                                 */
+  /***************************************************************************/
+
   it(`(multiparty) has correct initial isOperational() value`, async () => {
     // Get operating status
     let status = await config.flightSuretyData.isOperational.call();
@@ -73,19 +73,17 @@ contract("Flight Surety Tests", async accounts => {
     // Set it back for other tests to work
     await config.flightSuretyData.setOperatingStatus(true); //nonce issue here
   });
-  */
+
   it("(airline) cannot register an Airline using registerAirline() if it is not funded", async () => {
     // ARRANGE
     let newAirline = accounts[2];
 
     // ACT
     try {
-      const tx = await config.flightSuretyApp.registerAirline(newAirline, {
-        from: config.firstAirline
-      });
-      console.log("tx", tx);
+      const from = config.firstAirline;
+      await config.flightSuretyApp.registerAirline(newAirline, { from });
     } catch (e) {
-      console.log("error", e);
+      // console.log("error", e); // uncommment to verify error is thrown
     }
     let result = await config.flightSuretyData.isAirline.call(newAirline);
 
@@ -97,33 +95,34 @@ contract("Flight Surety Tests", async accounts => {
     );
   });
 
-  /*
   it("(airline) can register an Airline using registerAirline() if it is funded", async () => {
     // ARRANGE
     let newAirline = accounts[2];
 
     // ACT
     try {
-      const from = config.firstAirline;
-      const tx1 = await config.flightSuretyApp.registerAirline(newAirline, {
+      const value = web3.utils.toWei("10", "ether");
+      let from = config.firstAirline;
+      const t1 = await config.flightSuretyApp.fundAirline({ value, from });
+      console.log("t1", t1);
+      const t2 = await config.flightSuretyApp.registerAirline(newAirline, {
         from
       });
-      console.log(tx1.logs);
-      showEvents(tx1.logs);
-      const value = web3.utils.toWei("10", "ether");
-      await config.flightSuretyApp.fundAirline({ value });
+      console.log("t2", t2);
     } catch (e) {
-      assert.equal(true, false, "Failed Funding Airline." + e.message);
+      assert.fail(`Failed Funding Airline. ${e.message}`);
     }
-    
+
     let result = await config.flightSuretyData.isAirline.call(newAirline);
-    console.log("result", result);
-      // ASSERT
-      assert.equal(
-        result,
-        true,
-        "Airline can register another airline if it hasn provided funding"
-      );
+    let result2 = await config.flightSuretyData.isAirline.call(
+      config.firstAirline
+    );
+    console.log("results", result, result2);
+    // ASSERT
+    assert.equal(
+      result,
+      true,
+      "Airline can register another airline if it hasn't provided funding"
+    );
   });
-  */
 });

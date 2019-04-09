@@ -10,8 +10,8 @@ contract FlightSuretyData {
   function setOperatingStatus(bool mode) external; 
   function authorizedContract(address adr) external;
   function deauthorizedContract(address adr) external;
-  function registerAirline(address airline) external;
-  function fund() public payable;
+  function registerAirline(address airline, address requestedBy) external;
+  function fund(address airline) public payable;
   function registerFlight(address airline, string flight, uint256 timestamp) external;
   function buy(address airline, string flight, uint256 timestamp) external;
   function creditInsurees(address airline, string flight, uint256 timestamp) external;
@@ -112,19 +112,19 @@ contract FlightSuretyApp {
   */   
   function registerAirline(address airline) external returns(bool success, uint256 votes)
   {
-    flightSuretyData.registerAirline(airline);
+    flightSuretyData.registerAirline(airline, msg.sender);
     emit RegisterAirlineA(msg.sender, airline);
     return (success, 0);
   }
 
-  event Funded(address airline, uint256);
+  event FundA(address a, uint256 val);
   /**
   * @dev Fund an airline in the registration queue
   */   
   function fundAirline() payable external
   {
-    emit Funded(msg.sender, msg.value);
-    //flightSuretyData.fund();
+    flightSuretyData.fund.value(msg.value)(msg.sender);
+    emit FundA(msg.sender, msg.value);
   }
 
 

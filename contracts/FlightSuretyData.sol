@@ -20,14 +20,20 @@ contract FlightSuretyData {
   /*************************************************************************/
   /*                                       EVENT DEFINITIONS                /
   /*************************************************************************/
+  event RegisterAirlineD(
+    address arline1,  AirlineState as1,
+    address arline2, AirlineState as2,
+    address arline3, AirlineState as3
+  ); 
 
   /**
   * @dev Constructor
   *      The deploying account becomes contractOwner
   */
-  constructor()public 
+  constructor(address initialAirline)public 
   {
     contractOwner = msg.sender;
+    airlines[initialAirline] = AirlineState.Registered;
   }
 
   /*************************************************************************/
@@ -104,8 +110,8 @@ contract FlightSuretyData {
 
   function isAirline(address airline) public view requireContractOwner returns(bool)
   {
-    if (airlines[airline] == AirlineState.Funded) return true;
-    return false;
+    if (airlines[airline] == AirlineState.Unregistered) return false;
+    return true;
   }
   /*************************************************************************/
   /*                                     SMART CONTRACT FUNCTIONS           /
@@ -120,20 +126,24 @@ contract FlightSuretyData {
     delete authorizedContracts[adr];
   }
 
-  event RegisterAirlineD(address by, address arline); 
   /**
   * @dev Add an airline to the registration queue
   *      Can only be called from FlightSuretyApp contract
   */   
-  function registerAirline(address airline) external isCallerAuthorized requireIsOperational
+  function registerAirline(address airline, address requestedBy) 
+    external isCallerAuthorized requireIsOperational
   {
-    if (airlinesNo == 0) {
-      airlines[msg.sender] = AirlineState.Registered;
-    } else {
-      require(airlines[msg.sender] != AirlineState.Unregistered, "Only previous airlines are allowed to register");
-      airlines[msg.sender] = AirlineState.Registered;
-    }
-    emit RegisterAirlineD(msg.sender, airline);
+    require(airlines[requestedBy] == AirlineState.Funded, 
+      "only funded airlines may register a new airline");
+    require(airlines[airline] != AirlineState.Unregistered,
+      "Airline previously register");
+
+    airlines[airline] = AirlineState.Registered;
+    emit RegisterAirlineD(
+      requestedBy, airlines[requestedBy],
+      airline,  airlines[airline],
+      address(0),  airlines[address(0)]
+    );
 }
 
   function registerFlight(address airline, string flight, uint256 timestamp) external isCallerAuthorized
@@ -194,19 +204,19 @@ contract FlightSuretyData {
     contractOwner.transfer(payout);
   }
 
-  event Funded(address airline);
+  event FundD(address a, uint256 val);
   /**
   * @dev Initial funding for the insurance. Unless there are too many delayed
   *      flights resulting in insurance payouts, the contract should be
   *      self-sustaining
   */   
-  function fund() public payable
+  function fund(address airline) external payable
   {
     require(msg.value == 10 ether, "Airline insufficently funded");
-    require(airlines[msg.sender] == AirlineState.Registered,
+    require(airlines[airline] == AirlineState.Registered,
       "Airline not registered");
-    airlines[msg.sender] = AirlineState.Funded;
-    emit Funded(msg.sender);
+    airlines[airline] = AirlineState.Funded;
+    emit FundD(airline, msg.value);
   }
 
   function getFlightKey ( 
@@ -228,7 +238,6 @@ contract FlightSuretyData {
   */
   function() external payable 
   {
-    fund();
   }
 }
 
