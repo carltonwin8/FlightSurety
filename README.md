@@ -54,6 +54,17 @@ Deploy the contents of the ./dapp folder
 
 Please ignore the text below here as it is just used as a scratch pad.
 
+### Notes To Self
+
+Start `ganache-cli` with `--noVMErrorsOnRPCResponse` option to work with
+
+`truffle`.
+This option makes the `ganache-cli` behave like the two main ethereum
+clients `geth` and `parity`.
+I am assuming that `truffle`, maybe via `web`, expects this behaviour and
+when the `ganache-cli` option it **NOT** provided `truffle` and the
+`ganache-cli` get out of sync and nonce issues are seen.
+
 Read the udacity student hub up to and including April 5, 2019.
 
 Questions providing repositories on date noted.

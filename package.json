@@ -13,7 +13,7 @@
     "dapp": "webpack-dev-server --mode development --config webpack.config.dapp.js",
     "dapp:prod": "webpack --mode production  --config webpack.config.dapp.js",
     "server": "rm -rf ./build/server && webpack --config webpack.config.server.js",
-    "gcli": "ganache-cli -m \"candy maple cake sugar pudding cream honey rich smooth crumble sweet treat\"",
+    "gcli": "ganache-cli --noVMErrorsOnRPCResponse -a 30 -m \"candy maple cake sugar pudding cream honey rich smooth crumble sweet treat\"",
     "tcon": "truffle console"
   },
   "author": "Nik Kalyani <nik@kalyani.com> https://www.kalyani.com",
