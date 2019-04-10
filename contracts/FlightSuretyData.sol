@@ -113,6 +113,13 @@ contract FlightSuretyData {
     if (airlines[airline] == AirlineState.Unregistered) return false;
     return true;
   }
+
+
+  function airlineStatus(address airline) public view requireContractOwner returns(AirlineState)
+  {
+    return airlines[airline];
+  }
+
   /*************************************************************************/
   /*                                     SMART CONTRACT FUNCTIONS           /
   /*************************************************************************/
@@ -133,12 +140,16 @@ contract FlightSuretyData {
   function registerAirline(address airline, address requestedBy) 
     external isCallerAuthorized requireIsOperational
   {
+
     require(airlines[requestedBy] == AirlineState.Funded, 
       "only funded airlines may register a new airline");
-    require(airlines[airline] != AirlineState.Unregistered,
-      "Airline previously register");
+    require(airlines[airline] != AirlineState.Registered,
+      "Airline previously registered");
+    require(airlines[airline] != AirlineState.Funded,
+      "Airline previously registered and funed"); 
 
     airlines[airline] = AirlineState.Registered;
+
     emit RegisterAirlineD(
       requestedBy, airlines[requestedBy],
       airline,  airlines[airline],
@@ -204,7 +215,6 @@ contract FlightSuretyData {
     contractOwner.transfer(payout);
   }
 
-  event FundD(address a, uint256 val);
   /**
   * @dev Initial funding for the insurance. Unless there are too many delayed
   *      flights resulting in insurance payouts, the contract should be
@@ -216,7 +226,6 @@ contract FlightSuretyData {
     require(airlines[airline] == AirlineState.Registered,
       "Airline not registered");
     airlines[airline] = AirlineState.Funded;
-    emit FundD(airline, msg.value);
   }
 
   function getFlightKey ( 

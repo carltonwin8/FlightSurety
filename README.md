@@ -53,3 +53,10 @@ Deploy the contents of the ./dapp folder
 ## Notes
 
 Please ignore the text below here as it is just used as a scratch pad.
+
+Read the udacity student hub up to and including April 5, 2019.
+
+Questions providing repositories on date noted.
+
+- https://gitlab.com/urkopineda/bcnd-flightsurety - March 22
+- https://github.com/dmavridis/blockchain-FlightSurety - April 7

@@ -17,6 +17,12 @@ contract FlightSuretyData {
   function creditInsurees(address airline, string flight, uint256 timestamp) external;
   function clearInsurees(address airline, string flight, uint256 timestamp) external;
   function pay(uint256 n, uint256 d) external;
+  enum AirlineState { Unregistered, Registered, Funded }
+  event RegisterAirlineD(
+    address arline1,  AirlineState as1,
+    address arline2, AirlineState as2,
+    address arline3, AirlineState as3
+  ); 
 }
 
 
@@ -117,14 +123,12 @@ contract FlightSuretyApp {
     return (success, 0);
   }
 
-  event FundA(address a, uint256 val);
   /**
   * @dev Fund an airline in the registration queue
   */   
   function fundAirline() payable external
   {
     flightSuretyData.fund.value(msg.value)(msg.sender);
-    emit FundA(msg.sender, msg.value);
   }
 
 
