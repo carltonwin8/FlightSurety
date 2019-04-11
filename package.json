@@ -14,7 +14,11 @@
     "dapp:prod": "webpack --mode production  --config webpack.config.dapp.js",
     "server": "rm -rf ./build/server && webpack --config webpack.config.server.js",
     "gcli": "ganache-cli --noVMErrorsOnRPCResponse -a 30 -m \"candy maple cake sugar pudding cream honey rich smooth crumble sweet treat\"",
-    "tcon": "truffle console"
+    "gclif": "ganache-cli --noVMErrorsOnRPCResponse -a 30 -m \"candy maple cake sugar pudding cream honey rich smooth crumble sweet treat\" > gcli.log",
+    "tcon": "truffle console",
+    "gclinm": "nodemon --exec npm run gcli",
+    "logs": "node ./scripts/gcli.js",
+    "balances": "truffle exec ./scripts/balances.js"
   },
   "author": "Nik Kalyani <nik@kalyani.com> https://www.kalyani.com",
   "devDependencies": {
@@ -34,6 +38,7 @@
     "file-loader": "3.0.1",
     "html-loader": "0.5.5",
     "html-webpack-plugin": "^3.2.0",
+    "nodemon": "^1.18.11",
     "openzeppelin-solidity": "^1.10.0",
     "start-server-webpack-plugin": "2.2.5",
     "style-loader": "^0.23.1",

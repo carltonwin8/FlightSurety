@@ -1,0 +1,10 @@
+{
+  "flights": [
+    { "address": 1, "flight": "ND1309", "timestamp": "1554952974" },
+    { "address": 1, "flight": "ND1310", "timestamp": "1554952975" },
+    { "address": 2, "flight": "ND1311", "timestamp": "1554952976" },
+    { "address": 3, "flight": "ND1312", "timestamp": "1554952977" },
+    { "address": 10, "flight": "ND1313", "timestamp": "1554952978" },
+    { "address": 20, "flight": "ND1314", "timestamp": "1554952979" }
+  ]
+}

@@ -30,7 +30,9 @@ contract("Oracles", async accounts => {
         from: accounts[a]
       });
       console.log(
-        `Oracle Registered: ${result[0]}, ${result[1]}, ${result[2]}`
+        `Oracle Registered: ${result[0]}, ${result[1]}, ${result[2]} ${
+          accounts[a]
+        }`
       );
     }
   });
@@ -73,10 +75,12 @@ contract("Oracles", async accounts => {
             idx,
             oracleIndexes[idx].toNumber(),
             flight,
-            timestamp
+            timestamp,
+            accounts[a]
           );
         } catch (e) {
           // Enable this when debugging
+          /*
           console.log(
             "Error",
             idx,
@@ -85,6 +89,7 @@ contract("Oracles", async accounts => {
             timestamp,
             e.message
           );
+          */
         }
       }
     }
