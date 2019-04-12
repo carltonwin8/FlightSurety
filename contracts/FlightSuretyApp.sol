@@ -17,12 +17,6 @@ contract FlightSuretyData {
   function creditInsurees(address airline, string flight, uint256 timestamp) external;
   function clearInsurees(address airline, string flight, uint256 timestamp) external;
   function pay(uint256 n, uint256 d) external;
-  enum AirlineState { Unregistered, Registered, Funded }
-  event RegisterAirlineD(
-    address arline1,  AirlineState as1,
-    address arline2, AirlineState as2,
-    address arline3, AirlineState as3
-  ); 
 }
 
 
@@ -112,14 +106,12 @@ contract FlightSuretyApp {
   /*                                     SMART CONTRACT FUNCTIONS              /
   /****************************************************************************/
 
-  event RegisterAirlineA(address by, address arline); 
   /**
   * @dev Add an airline to the registration queue
   */   
   function registerAirline(address airline) external returns(bool success, uint256 votes)
   {
     flightSuretyData.registerAirline(airline, msg.sender);
-    emit RegisterAirlineA(msg.sender, airline);
     return (success, 0);
   }
 
@@ -205,8 +197,9 @@ contract FlightSuretyApp {
 
   // Event fired each time an oracle submits a response
   event FlightStatusInfo(address airline, string flight, uint256 timestamp, uint8 status);
-
-  event OracleReport(address airline, string flight, uint256 timestamp, uint8 status);
+  bool toggle = false;
+  event OracleReport(address airline, string flight, uint256 timestamp, uint8 status,
+  address ria, bool rio);
 
   // Event fired when flight status request is submitted
   // Oracles track this and if they have a matching index
@@ -245,20 +238,26 @@ contract FlightSuretyApp {
       "Index does not match oracle request");
 
     bytes32 key = keccak256(abi.encodePacked(index, airline, flight, timestamp)); 
-    require(oracleResponses[key].isOpen, 
+    require(oracleResponses[key].requester != address(0), 
       "Flight or timestamp do not match oracle request");
+    require(oracleResponses[key].isOpen, "Response window closed");
 
     oracleResponses[key].responses[statusCode].push(msg.sender);
 
+    bytes32 mtKey;
+    ResponseInfo memory ri = oracleResponses[mtKey];
+
+    toggle = !toggle;
     // Information isn't considered verified until at least MIN_RESPONSES
     // oracles respond with the *** same *** information
-    emit OracleReport(airline, flight, timestamp, statusCode);
+    emit OracleReport(airline, flight, timestamp, statusCode, ri.requester, ri.isOpen);
     if (oracleResponses[key].responses[statusCode].length >= MIN_RESPONSES) {
 
       emit FlightStatusInfo(airline, flight, timestamp, statusCode);
 
       // Handle flight status as appropriate
-      processFlightStatus(airline, flight, timestamp, statusCode);
+      oracleResponses[key].isOpen = false;
+      //processFlightStatus(airline, flight, timestamp, statusCode);
     }
   }
 
