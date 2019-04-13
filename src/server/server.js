@@ -2,7 +2,7 @@ import FlightSuretyApp from "../../build/contracts/FlightSuretyApp.json";
 import Config from "./config.json";
 import Web3 from "web3";
 import express from "express";
-import FlightInfo from "./flightInfo.json";
+//import FlightInfo from "./flightInfo.json";
 import fs from "fs";
 
 const oraclesInfo = [];
@@ -14,6 +14,7 @@ let web3 = new Web3(
 
 (async () => {
   try {
+    let stopOnFSI = false;
     const gas = 2000000;
     const accounts = await web3.eth.getAccounts();
     web3.eth.defaultAccount = accounts[0];
@@ -25,7 +26,7 @@ let web3 = new Web3(
 
     flightSuretyApp.events.allEvents(
       {
-        fromBlock: 0
+        fromBlock: "latest"
       },
       async function(error, event) {
         try {
@@ -37,18 +38,19 @@ let web3 = new Web3(
           }
           if (error) return console.log(error);
           if (event.event === "OracleRequest") {
+            stopOnFSI = false;
             const { event: evnt, blockNumber, returnValues } = event;
             const { airline, flight, timestamp, index: idx } = returnValues;
             console.log(
-              `${evnt} on block ${blockNumber} for airline ${airline} and`
+              `>>> ${evnt} on block ${blockNumber} for airline ${airline}`
             );
             console.log(
-              `oracle index ${idx} for flight ${flight} at time ${timestamp}.`
+              `Use ${idx} as the index for flight ${flight} at ${timestamp}`
             );
-            for (let i = 0; i < oraclesInfo.length; i++) {
+            for (let i = 0; i < oraclesInfo.length && !stopOnFSI; i++) {
               const oracleInfo = oraclesInfo[i];
               const oIdx = oracleInfo.indexs;
-              if (idx === oIdx[0] || idx === oIdx[1] || idx === oIdx) {
+              if (idx === oIdx[0] || idx === oIdx[1] || idx === oIdx[2]) {
                 //const airlineStatus = Math.floor(Math.random() * 5) * 10;
                 const airlineStatus = 10; // for debug
                 //const airlineStatus = 20; // for debug
@@ -79,7 +81,8 @@ let web3 = new Web3(
               }
             }
           } else {
-            console.log(event.event, "on block", event.blockNumber);
+            console.log(">>>", event.event, "on block", event.blockNumber);
+            if (event.event === "FlightStatusInfo") stopOnFSI = true;
           }
         } catch (e) {
           console.log("FSS Error", e);
@@ -87,7 +90,7 @@ let web3 = new Web3(
       }
     );
 
-    /* 
+    /* */
     const oracles = accounts.slice(5, 25);
     const value = await flightSuretyApp.methods.REGISTRATION_FEE().call();
 
@@ -115,7 +118,8 @@ let web3 = new Web3(
 const app = express();
 
 app.get("/api/flightinfo", (req, res) => {
-  res.send(FlightInfo);
+  // res.send(FlightInfo);
+  res.send({ flightInfo: "coming soon" });
 });
 
 app.get("/api", (req, res) => {
