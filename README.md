@@ -64,7 +64,7 @@ The allocation of the address follows.
 | 0       | Used to deploy the contracts |
 | 1       | First Airline                |
 | 2-7     | Airlines                     |
-| 8,9     | Users                        |
+| 8-9     | Passangers                   |
 | 10-30   | Oracles                      |
 
 ## Notes - Ignore

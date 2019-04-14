@@ -1,85 +1,72 @@
-const addressesIsInvalid = (addresses, startIndex, req, msg) => {
+const addressesIsInvalid = (addresses, startIndex, arr, msg) => {
   if (!addresses) {
     console.error(`Error! No addresses provided. ${msg}`);
     return true;
   }
-  if (address.length < startIndex) {
-    console.error(`Error! Start index greater than address. ${msg}`);
+  if (addresses.length < startIndex) {
+    console.error(`Error! Start index greater than addresses. ${msg}`);
+    return true;
+  }
+  if (addresses.length < startIndex + arr.length) {
+    console.error(`Error! End address greater than addresses. ${msg}`);
     return true;
   }
   return false;
 };
 
-const getUsers = (addresses, startIndex = 8) => {
-  const users = [{ name: "John Doe" }, { name: "Jane Smith" }];
-  if (addressesIsInvalid(addresses, startIndex, users.length, "getUsers"))
-    return null;
-  return users.map(({ name }, idx) => {
-    name, addresses[startIndex + index];
-  });
-};
-
-const getAirlines = (addresses, startIndex =1) => {
-  const airlines = [
-      { name: "South West" },
-      { name: "America" },
-      { name: "Qantas" },
-      { name: "Alaska" },
-      { name: "Cathay" },
-      { name: "South West" }
-    ]
-    if (addressesIsInvalid(addresses, startIndex, users.length, "getUsers"))
-    return null;
-  return users.map((airline, idx) => ({
-    ...airline, addresses[startIndex + index]
+const assignAddresses = (addresses, startIndex, arr) =>
+  arr.map((item, index) => ({
+    ...item,
+    address: addresses[startIndex + index]
   }));
-}
-const hi = {
-  airlinesInfo: {
-    startAddress: 1,
 
-  },
-  flights: [
-    {
-      airlineAddress: 0,
-      flight: "ND1309",
-      timestamp: "1554952974",
-      status: 0
-    },
-    {
-      address: 1,
-      flight: "ND1310",
-      timestamp: "1554952975",
-      status: 10
-    },
-    {
-      address: 2,
-      flight: "ND1311",
-      timestamp: "1554952976",
-      status: 20
-    },
-    {
-      address: 3,
-      flight: "ND1312",
-      timestamp: "1554952977",
-      status: 30
-    },
-    {
-      address: 10,
-      flight: "ND1313",
-      timestamp: "1554952978",
-      status: 40
-    },
-    {
-      address: 20,
-      flight: "ND1314",
-      timestamp: "1554952979",
-      status: 50
-    }
-  ]
+const getAirlines = (addresses, startIndex = 1) => {
+  const airlines = [
+    { name: "South West" },
+    { name: "America" },
+    { name: "Qantas" },
+    { name: "Alaska" },
+    { name: "Cathay" },
+    { name: "South West" }
+  ];
+  if (addressesIsInvalid(addresses, startIndex, airlines, "getAirlines"))
+    return null;
+  return assignAddresses(addresses, startIndex, airlines);
 };
 
-exports = {
+const getPassangers = (addresses, startIndex = 8) => {
+  const passangers = [{ name: "John Doe" }, { name: "Jane Smith" }];
+  if (addressesIsInvalid(addresses, startIndex, passangers, "getPassanger"))
+    return null;
+  return assignAddresses(addresses, startIndex, passangers);
+};
+
+const getFlights = (addresses, startIndex = 1) => {
+  // fixed status below only used for testing
+  const flights = [
+    { flight: "ND1309", timestamp: "1554952974", status: 0 },
+    { flight: "ND1310", timestamp: "1554952975", status: 10 },
+    { flight: "ND1311", timestamp: "1554952976", status: 20 },
+    { flight: "ND1312", timestamp: "1554952977", status: 30 },
+    { flight: "ND1313", timestamp: "1554952978", status: 40 },
+    { flight: "ND1314", timestamp: "1554952979", status: 50 }
+  ];
+  if (addressesIsInvalid(addresses, startIndex, flights, "getAirlines"))
+    return null;
+  // just assign an airline to a flight
+  return assignAddresses(addresses, startIndex, flights);
+};
+
+const getOracles = (addresses, startIndex = 10) => {
+  const flights = Array(20).fill(null);
+  if (addressesIsInvalid(addresses, startIndex, flights, "getAirlines"))
+    return null;
+  return assignAddresses(addresses, startIndex, flights);
+};
+
+module.exports = {
   getAirlines,
-  get
+  getPassangers,
+  getFlights,
+  getOracles
 };

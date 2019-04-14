@@ -2,9 +2,10 @@ import FlightSuretyApp from "../../build/contracts/FlightSuretyApp.json";
 import Config from "./config.json";
 import Web3 from "web3";
 import express from "express";
-//import FlightInfo from "./flightInfo.json";
+import AddressInfo from "./addressInfo";
 import fs from "fs";
 
+let accounts = [];
 const oraclesInfo = [];
 const oraclesInfoFile = "oraclesInfo.log";
 let config = Config["localhost"];
@@ -16,7 +17,7 @@ let web3 = new Web3(
   try {
     let stopOnFSI = false;
     const gas = 2000000;
-    const accounts = await web3.eth.getAccounts();
+    accounts = await web3.eth.getAccounts();
     web3.eth.defaultAccount = accounts[0];
 
     let flightSuretyApp = new web3.eth.Contract(
@@ -90,8 +91,8 @@ let web3 = new Web3(
       }
     );
 
-    /* */
-    const oracles = accounts.slice(5, 25);
+    /*
+    const oracles = accounts.slice(10, 30);
     const value = await flightSuretyApp.methods.REGISTRATION_FEE().call();
 
     for (let i = 0; i < oracles.length; i++) {
@@ -117,9 +118,21 @@ let web3 = new Web3(
 
 const app = express();
 
-app.get("/api/flightinfo", (req, res) => {
-  // res.send(FlightInfo);
-  res.send({ flightInfo: "coming soon" });
+app.get("/api/addressInfo", (_, res) => {
+  if (accounts.length <= 0) {
+    const msg = "Error. No accounts setup yet!";
+    console.error(msg);
+    res.setHeader("Content-Type", "application/json");
+    res.end(JSON.stringify({ msg }));
+    return;
+  }
+  const Users = AddressInfo.getUsers(accounts);
+  const Airlines = AddressInfo.getAirlines(accounts);
+  const Flights = AddressInfo.getFlights(accounts);
+  const Oracles = AddressInfo.getOracles(accounts);
+  const addressInfo = { Airlines, Users, Flights, Oracles };
+  res.setHeader("Content-Type", "application/json");
+  res.end(JSON.stringify(addressInfo, null, 2));
 });
 
 app.get("/api", (req, res) => {
