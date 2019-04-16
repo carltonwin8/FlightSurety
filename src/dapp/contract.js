@@ -1,6 +1,7 @@
 import FlightSuretyApp from "../../build/contracts/FlightSuretyApp.json";
 import Config from "./config.json";
 import Web3 from "web3";
+import AddressInfo from "../server/addressInfo";
 
 export default class Contract {
   constructor(network, callback) {
@@ -20,15 +21,11 @@ export default class Contract {
     this.web3.eth.getAccounts((error, accts) => {
       this.owner = accts[0];
 
-      let counter = 1;
-
-      while (this.airlines.length < 8) {
-        this.airlines.push(accts[counter++]);
-      }
-
-      while (this.passengers.length < 2) {
-        this.passengers.push(accts[counter++]);
-      }
+      this.airlinesInfo = AddressInfo.getAirlines(accts);
+      this.airlines = this.airlinesInfo.map(airline => airline.address);
+      this.passangersInfo = AddressInfo.getPassangers(accts);
+      this.passangers = this.passangersInfo.map(passanger => passanger.address);
+      this.flightsInfo = AddressInfo.getFlights(accts);
 
       callback();
     });

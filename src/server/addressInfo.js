@@ -27,7 +27,7 @@ const getAirlines = (addresses, startIndex = 1) => {
     { name: "Qantas" },
     { name: "Alaska" },
     { name: "Cathay" },
-    { name: "South West" }
+    { name: "Azul" }
   ];
   if (addressesIsInvalid(addresses, startIndex, airlines, "getAirlines"))
     return null;
@@ -44,12 +44,12 @@ const getPassangers = (addresses, startIndex = 8) => {
 const getFlights = (addresses, startIndex = 1) => {
   // fixed status below only used for testing
   const flights = [
-    { flight: "ND1309", timestamp: "1554952974", status: 0 },
-    { flight: "ND1310", timestamp: "1554952975", status: 10 },
-    { flight: "ND1311", timestamp: "1554952976", status: 20 },
-    { flight: "ND1312", timestamp: "1554952977", status: 30 },
-    { flight: "ND1313", timestamp: "1554952978", status: 40 },
-    { flight: "ND1314", timestamp: "1554952979", status: 50 }
+    { number: "ND1309", timestamp: "1554952974", status: 0 },
+    { number: "ND1310", timestamp: "1554952975", status: 10 },
+    { number: "ND1311", timestamp: "1554952976", status: 20 },
+    { number: "ND1312", timestamp: "1554952977", status: 30 },
+    { number: "ND1313", timestamp: "1554952978", status: 40 },
+    { number: "ND1314", timestamp: "1554952979", status: 50 }
   ];
   if (addressesIsInvalid(addresses, startIndex, flights, "getAirlines"))
     return null;

@@ -42,8 +42,8 @@ The software version numbers used during test are noted below.
 In order to test this application do the following:
 
 - Start the block chain via `npm run gcli`.
-- Start the server/oracles via `npm run server`.
 - Deploy the contract to the block chain via `truffle deploy`.
+- Start the server/oracles via `npm run server`.
 - Start the client via `npm run dapp`.
 - Open a web browser to http://localhost:8000
 

@@ -32,7 +32,11 @@
 
     <main>
       <div class="container top">
-        <div id="display-wrapper" class="top-20"></div>
+        <div id="display-wrapper" class="top-20">
+          <div id="cos">
+            Contract Operationl Status: <span id="cos-value">tbd</span>
+          </div>
+        </div>
         <div id="display-wrapper2" class="top-20"></div>
       </div>
 
@@ -41,10 +45,8 @@
           <btn class="btn btn-primary" id="submit-create-airline">
             Create Airline
           </btn>
-          <label class="form">Address</label>
-          <input type="text" id="ca-address" value="ND1309" />
           <label class="form">Name</label>
-          <input type="text" id="ca-name" value="ND1309" />
+          <select type="text" id="ca-airline"></select>
         </div>
       </div>
 
@@ -53,10 +55,10 @@
           <btn class="btn btn-primary" id="submit-fund-airline">
             Fund Airline
           </btn>
-          <label class="form">Ethers</label>
-          <input type="text" id="fa-amount" value="ND1309" />
           <label class="form">Name</label>
-          <input type="text" id="fa-name" value="ND1309" />
+          <select type="text" id="fa-airline"></select>
+          <label class="form">Ethers</label>
+          <input type="text" id="fa-amount" value="10" size="5" />
         </div>
       </div>
 
@@ -65,10 +67,12 @@
           <btn class="btn btn-primary" id="submit-buy-insurance">
             Buy Insurance
           </btn>
-          <label class="form">Ethers</label>
-          <input type="text" id="bi-amount" value="ND1309" />
+          <label class="form">Passanger</label>
+          <select id="bi-passangers"></select>
           <label class="form">Flight</label>
-          <input type="text" id="bi-name" value="ND1309" />
+          <select type="text" id="bi-flight" value="ND1309"></select>
+          <label class="form">Ethers</label>
+          <input type="text" id="bi-amount" value="1" size="5" />
         </div>
       </div>
 
@@ -78,7 +82,7 @@
             Request Status
           </btn>
           <label class="form">Flight</label>
-          <input type="text" id="flight-number" value="ND1309" />
+          <select type="text" id="flight-number"></select>
         </div>
       </div>
 
@@ -88,7 +92,7 @@
             Claim Insurance
           </btn>
           <label class="form">Flight</label>
-          <input type="text" id="ci-flight-number" value="ND1309" />
+          <select type="text" id="ci-flight-number"></select>
         </div>
       </div>
     </main>

@@ -13,13 +13,21 @@ let web3 = new Web3(
   new Web3.providers.WebsocketProvider(config.url.replace("http", "ws"))
 );
 
+let Passangers;
+let Airlines;
+let Flights;
+let Oracles;
+
 (async () => {
   try {
     let stopOnFSI = false;
     const gas = 2000000;
     accounts = await web3.eth.getAccounts();
     web3.eth.defaultAccount = accounts[0];
-
+    Passangers = AddressInfo.getPassangers(accounts);
+    Airlines = AddressInfo.getAirlines(accounts);
+    Flights = AddressInfo.getFlights(accounts);
+    Oracles = AddressInfo.getOracles(accounts);
     let flightSuretyApp = new web3.eth.Contract(
       FlightSuretyApp.abi,
       config.appAddress
@@ -91,11 +99,16 @@ let web3 = new Web3(
       }
     );
 
-    /*
-    const oracles = accounts.slice(10, 30);
-    const value = await flightSuretyApp.methods.REGISTRATION_FEE().call();
+    /* */
+    const oracles = Oracles.map(oracle => oracle.address);
+    const totalOracles = await flightSuretyApp.methods
+      .getNoOracles()
+      .call({ gas });
+    const value = await flightSuretyApp.methods
+      .REGISTRATION_FEE()
+      .call({ gas });
 
-    for (let i = 0; i < oracles.length; i++) {
+    for (let i = 0; i < oracles.length && totalOracles == 0; i++) {
       const from = oracles[i];
       await flightSuretyApp.methods.registerOracle().send({ from, value, gas });
       const r = await flightSuretyApp.methods.getMyIndexes().call({
@@ -126,11 +139,8 @@ app.get("/api/addressInfo", (_, res) => {
     res.end(JSON.stringify({ msg }));
     return;
   }
-  const Users = AddressInfo.getUsers(accounts);
-  const Airlines = AddressInfo.getAirlines(accounts);
-  const Flights = AddressInfo.getFlights(accounts);
-  const Oracles = AddressInfo.getOracles(accounts);
-  const addressInfo = { Airlines, Users, Flights, Oracles };
+
+  const addressInfo = { Airlines, Passangers, Flights, Oracles };
   res.setHeader("Content-Type", "application/json");
   res.end(JSON.stringify(addressInfo, null, 2));
 });

@@ -181,7 +181,11 @@ contract FlightSuretyApp {
 
   // Track all registered oracles
   mapping(address => Oracle) private oracles;
-
+  uint256 private totalOracles;
+  function getNoOracles ( ) view external returns(uint256)
+  {
+    return totalOracles;
+  }
   // Model for responses from oracles
   struct ResponseInfo {
     address requester; // Account that requested status                             
@@ -214,6 +218,7 @@ contract FlightSuretyApp {
     require(msg.value >= REGISTRATION_FEE, "Registration fee is required");
     uint8[3] memory indexes = generateIndexes(msg.sender);
     oracles[msg.sender] = Oracle({isRegistered: true, indexes: indexes });
+    totalOracles++;
    }
 
   function getMyIndexes ( ) view external returns(uint8[3])
@@ -221,9 +226,6 @@ contract FlightSuretyApp {
     require(oracles[msg.sender].isRegistered, "Not registered as an oracle");
     return oracles[msg.sender].indexes;
   }
-
-
-
 
   // Called by oracle when a response is available to an outstanding request
   // For the response to be accepted, there must be a pending request that is open
