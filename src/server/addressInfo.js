@@ -1,3 +1,5 @@
+/* Ethereum address allocation */
+
 const addressesIsInvalid = (addresses, startIndex, arr, msg) => {
   if (!addresses) {
     console.error(`Error! No addresses provided. ${msg}`);

@@ -98,6 +98,14 @@ contract FlightSuretyData {
     return operational;
   }
 
+  event IsAuthorized(address adr, uint256 i);
+  function isAuthorized() public returns(bool)
+  {
+    emit IsAuthorized(msg.sender, authorizedContracts[msg.sender]);
+    if (authorizedContracts[msg.sender] == 1) return true;
+    return false;
+  }
+
   /**
   * @dev Sets contract operations on/off
   * When operational mode is disabled, all write transactions except for this
@@ -108,14 +116,16 @@ contract FlightSuretyData {
     operational = mode;
   }
 
-  function isAirline(address airline) public view requireContractOwner returns(bool)
+  function isAirline(address airline) public view requireContractOwner
+    returns(bool)
   {
     if (airlines[airline] == AirlineState.Unregistered) return false;
     return true;
   }
 
 
-  function airlineStatus(address airline) public view requireContractOwner returns(AirlineState)
+  function airlineStatus(address airline) public view requireContractOwner
+    returns(AirlineState)
   {
     return airlines[airline];
   }
@@ -123,9 +133,11 @@ contract FlightSuretyData {
   /*************************************************************************/
   /*                                     SMART CONTRACT FUNCTIONS           /
   /*************************************************************************/
+  event AuthorizedCaller(address adr, uint256 i);
   function authorizeCaller(address adr) external requireContractOwner
   {
     authorizedContracts[adr] = 1;
+    emit AuthorizedCaller(adr, authorizedContracts[adr]);
   }
   
   function deauthorizeCaller(address adr) external requireContractOwner
@@ -140,24 +152,25 @@ contract FlightSuretyData {
   function registerAirline(address airline, address requestedBy) 
     external isCallerAuthorized requireIsOperational
   {
-
+    /*
     require(airlines[requestedBy] == AirlineState.Funded, 
       "only funded airlines may register a new airline");
     require(airlines[airline] != AirlineState.Registered,
       "Airline previously registered");
     require(airlines[airline] != AirlineState.Funded,
       "Airline previously registered and funed"); 
-
+    */
     airlines[airline] = AirlineState.Registered;
 
     emit RegisterAirlineD(
       requestedBy, airlines[requestedBy],
-      airline,  airlines[airline],
-      address(0),  airlines[address(0)]
+      contractOwner,  airlines[airline],
+      msg.sender,  airlines[address(0)]
     );
 }
 
-  function registerFlight(address airline, string flight, uint256 timestamp) external isCallerAuthorized
+  function registerFlight(address airline, string flight, uint256 timestamp)
+    external isCallerAuthorized
   {
     bytes32 flightKey = getFlightKey(airline, flight, timestamp);
     address[] memory adr;
@@ -173,7 +186,8 @@ contract FlightSuretyData {
   {
     bytes32 flightKey = getFlightKey(airline, flight, timestamp);
     bytes32 passangerKey = getPassangerKey(msg.sender, flightKey);
-    require(insuredPassanger[passangerKey] == 0, 'Insurance previouly purchased');
+    require(insuredPassanger[passangerKey] == 0, 
+      'Insurance previouly purchased');
     insuredFlight[flightKey].push(msg.sender) ;
     insuredPassanger[passangerKey] = msg.value;
   }
@@ -181,8 +195,8 @@ contract FlightSuretyData {
   /**
     *  @dev Credits payouts to insurees
   */
-  function creditInsurees(address airline, string flight, uint256 timestamp) external 
-  requireAirlineFunded(airline)
+  function creditInsurees(address airline, string flight, uint256 timestamp)
+    external requireAirlineFunded(airline)
   {
     bytes32 flightKey = getFlightKey(airline, flight, timestamp);
     require (insuredFlight[flightKey].length >= 0, "passanger not insured");
@@ -198,8 +212,8 @@ contract FlightSuretyData {
   /**
     *  @dev Clear payouts to insurees
   */
-  function clearInsurees(address airline, string flight, uint256 timestamp) external 
-  requireAirlineFunded(airline)
+  function clearInsurees(address airline, string flight, uint256 timestamp)
+    external requireAirlineFunded(airline)
   {
     bytes32 flightKey = getFlightKey(airline, flight, timestamp);
     delete insuredFlight[flightKey];
