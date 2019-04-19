@@ -10,10 +10,10 @@ import "./flightsurety.css";
     if (error) return (DOM.elid("cos-value").innerHTML = error);
 
     let isOperational;
+    const opStatu = DOM.elid("cos-value");
     try {
       isOperational = await new Promise(resolve => {
         contract.isOperational((error, result) => {
-          const opStatu = DOM.elid("cos-value");
           if (error) {
             opStatu.textContent =
               "Error! Accessing the contract. Verify it is deployed.";
@@ -42,19 +42,24 @@ import "./flightsurety.css";
     displayFlights(contract, DOM.elid("flight-number"));
     displayFlights(contract, DOM.elid("ci-flight-number"));
 
+    DOM.elid("fund-airline").addEventListener("click", () =>
+      fund_airline(contract)
+    );
+
+    contract.getFlightFundingEvent(display_faStatus);
+
     DOM.elid("register-airline").addEventListener("click", () =>
       register_airline(contract)
     );
+
+    contract.getFlightFundingEvent(display_raStatus);
+
     DOM.elid("request-status").addEventListener("click", () =>
       req_flight_click(contract)
     );
     contract.getFlightStatusInfoEvent((err, res) =>
       req_flight_result(contract, err, res)
     );
-
-    contract.getAllEvents((err, res, prompt) => {
-      console.log(`event${prompt} >>`, err, res);
-    });
   });
 })();
 
@@ -107,19 +112,73 @@ function getAirline(select) {
   return { name, airline };
 }
 
+async function fund_airline(contract) {
+  const { airline, name } = getAirline(DOM.elid("fa-airline"));
+  const amount = DOM.elid("fa-amount").value;
+  let msg = `Funding ${name} Airline.`;
+
+  try {
+    await contract.fundAirline(airline, amount);
+  } catch (e) {
+    msg = `Error, ${msg}`;
+    console.log(msg, e);
+    display_faStatus(msg);
+  }
+}
+
+function display_faStatus(msg) {
+  remove_faStatus();
+  const btn = DOM.makeElement(
+    "btn",
+    { class: "btn-clr", id: "fa-clear" },
+    "Clear"
+  );
+  const row = DOM.div({ class: "row", id: "faStatus" }, msg);
+  row.appendChild(btn);
+  DOM.elid("fa").appendChild(row);
+  DOM.elid("fa-clear").addEventListener("click", remove_faStatus);
+}
+
+function remove_faStatus() {
+  const faStatus = DOM.elid("faStatus");
+  if (faStatus) faStatus.remove();
+}
+
 function register_airline(contract) {
   const { airline, name } = getAirline(DOM.elid("ra-airline"));
   const { airline: byAirline, name: byName } = getAirline(DOM.elid("ra-by"));
-  contract.registerAirline(airline, byAirline, (error, result) => {
-    let msg = `Creating Airline For - ${name}.`;
-    if (error) msg = `Error, ${msg} ${error}`;
-    console.log("error", error);
-    console.log("result", result);
-    contract.web3.eth.getTransaction(result, (e, r) => {
-      console.log("e", e);
-      console.log("r", r);
+  try {
+    contract.registerAirline(airline, byAirline, (error, result) => {
+      let msg = `Creating Airline For - ${name}.`;
+      if (error) msg = `Error, ${msg} ${error}`;
+      console.log("error", error);
+      console.log("result", result);
+      contract.web3.eth.getTransaction(result, (e, r) => {
+        console.log("e", e);
+        console.log("r", r);
+      });
     });
-  });
+  } catch (e) {
+    console("reg air err", e);
+  }
+}
+
+function display_raStatus(msg) {
+  remove_raStatus();
+  const btn = DOM.makeElement(
+    "btn",
+    { class: "btn-clr", id: "ra-clear" },
+    "Clear"
+  );
+  const row = DOM.div({ class: "row", id: "raStatus" }, msg);
+  row.appendChild(btn);
+  DOM.elid("ra").appendChild(row);
+  DOM.elid("ra-clear").addEventListener("click", remove_raStatus);
+}
+
+function remove_raStatus() {
+  const raStatus = DOM.elid("raStatus");
+  if (raStatus) raStatus.remove();
 }
 
 function req_flight_click(contract) {

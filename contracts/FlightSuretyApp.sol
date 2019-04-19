@@ -105,13 +105,13 @@ contract FlightSuretyApp {
   /****************************************************************************/
   /*                                     SMART CONTRACT FUNCTIONS              /
   /****************************************************************************/
-event RegisterAirlineA(address airline, address requestedBy);
+event RegisterAirline(address airline, address requestedBy);
   /**
   * @dev Add an airline to the registration queue
   */   
   function registerAirline(address airline) external returns(bool success, uint256 votes)
   {
-    emit RegisterAirlineA(airline, msg.sender);
+    emit RegisterAirline(airline, msg.sender);
     flightSuretyData.registerAirline(airline, msg.sender);
     return (success, 0);
   }
@@ -121,6 +121,7 @@ event RegisterAirlineA(address airline, address requestedBy);
   */   
   function fundAirline() payable external
   {
+    require(msg.value == 10 ether, "Airline insufficently funded");
     flightSuretyData.fund.value(msg.value)(msg.sender);
   }
 

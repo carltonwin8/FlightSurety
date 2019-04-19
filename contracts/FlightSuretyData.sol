@@ -20,11 +20,6 @@ contract FlightSuretyData {
   /*************************************************************************/
   /*                                       EVENT DEFINITIONS                /
   /*************************************************************************/
-  event RegisterAirlineD(
-    address arline1,  AirlineState as1,
-    address arline2, AirlineState as2,
-    address arline3, AirlineState as3
-  ); 
 
   /**
   * @dev Constructor
@@ -98,12 +93,15 @@ contract FlightSuretyData {
     return operational;
   }
 
-  event IsAuthorized(address adr, uint256 i);
-  function isAuthorized() public returns(bool)
+  function isAuthorized() public view returns(bool)
   {
-    emit IsAuthorized(msg.sender, authorizedContracts[msg.sender]);
     if (authorizedContracts[msg.sender] == 1) return true;
     return false;
+  }
+
+  function airlineState(address airline) public view returns(AirlineState)
+  {
+    return airlines[airline];
   }
 
   /**
@@ -133,17 +131,20 @@ contract FlightSuretyData {
   /*************************************************************************/
   /*                                     SMART CONTRACT FUNCTIONS           /
   /*************************************************************************/
-  event AuthorizedCaller(address adr, uint256 i);
   function authorizeCaller(address adr) external requireContractOwner
   {
     authorizedContracts[adr] = 1;
-    emit AuthorizedCaller(adr, authorizedContracts[adr]);
   }
   
   function deauthorizeCaller(address adr) external requireContractOwner
   {
     delete authorizedContracts[adr];
   }
+
+  event RegisterAirline(
+    address arline1,  AirlineState as1,
+    address arline2, AirlineState as2
+  ); 
 
   /**
   * @dev Add an airline to the registration queue
@@ -162,10 +163,9 @@ contract FlightSuretyData {
     */
     airlines[airline] = AirlineState.Registered;
 
-    emit RegisterAirlineD(
-      requestedBy, airlines[requestedBy],
-      contractOwner,  airlines[airline],
-      msg.sender,  airlines[address(0)]
+    emit RegisterAirline(
+      airline,  airlines[airline],
+      requestedBy, airlines[requestedBy]
     );
 }
 
@@ -234,12 +234,15 @@ contract FlightSuretyData {
   *      flights resulting in insurance payouts, the contract should be
   *      self-sustaining
   */   
+  event Funded(address airline, uint256 value);
   function fund(address airline) external payable
   {
-    require(msg.value == 10 ether, "Airline insufficently funded");
+    require(airlines[airline] != AirlineState.Funded,
+      "Airline previously funded");
     require(airlines[airline] == AirlineState.Registered,
       "Airline not registered");
     airlines[airline] = AirlineState.Funded;
+    emit Funded(airline, msg.value);
   }
 
   function getFlightKey ( 

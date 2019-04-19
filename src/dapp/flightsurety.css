@@ -60,7 +60,9 @@ input {
   color: #0e7fa8;
 }
 
-#rsStatus {
+#rsStatus,
+#faStatus,
+#status {
   margin-top: 10px;
 }
 

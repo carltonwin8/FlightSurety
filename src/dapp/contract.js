@@ -26,37 +26,32 @@ export default class Contract {
     this.passengers = [];
   }
 
-  initialize(callback) {
-    this.web3.eth.getAccounts((error, accts) => {
+  async initialize(callback) {
+    try {
+      const accts = await this.web3.eth.getAccounts();
       if (!accts || accts.length === 0) {
         return callback("Error! Access To Etherum Blockchain Failed.");
       }
       this.owner = accts[0];
-
       this.airlinesInfo = AddressInfo.getAirlines(accts);
       this.airlines = this.airlinesInfo.map(airline => airline.address);
       this.passangersInfo = AddressInfo.getPassangers(accts);
       this.passangers = this.passangersInfo.map(passanger => passanger.address);
       this.flightsInfo = AddressInfo.getFlights(accts);
 
-      this.flightSuretyData.methods
+      const isAuth = await this.flightSuretyData.methods
         .isAuthorized()
-        .call({ from: this.config.appAddress }, (e, r) => {
-          if (e) return callback("Error! Verifying authorization");
-          console.log("auth", r);
-          if (r) return callback(null);
-          this.flightSuretyData.methods
-            .authorizeCaller(this.config.appAddress)
-            .call((e, r) => {
-              console.log("auth status", e, r);
-              if (e)
-                return callback(
-                  "Error! Granting access to data contract from app contract."
-                );
-              return callback(null);
-            });
-        });
-    });
+        .call({ from: this.config.appAddress });
+      if (isAuth) return callback(null);
+      await this.flightSuretyData.methods
+        .authorizeCaller(this.config.appAddress)
+        .send({ from: this.owner });
+      return callback(null);
+    } catch (e) {
+      const msg = `Error! Blockchain up? Contract deployed? ${e}`;
+      console.log(msg);
+      callback(msg);
+    }
   }
 
   isOperational(callback) {
@@ -64,6 +59,16 @@ export default class Contract {
     self.flightSuretyApp.methods
       .isOperational()
       .call({ from: self.owner }, callback);
+  }
+
+  async airlineState(airline) {
+    return await this.flightSuretyData.methods.airlineState(airline).call();
+  }
+
+  async fundAirline(from, value) {
+    return await this.flightSuretyApp.methods
+      .fundAirline()
+      .send({ from, value: this.web3.utils.toWei(value) });
   }
 
   registerAirline(airline, requestedBy, callback) {
@@ -85,6 +90,22 @@ export default class Contract {
       });
   }
 
+  getFlightFundingEvent(msgcb) {
+    this.flightSuretyData.events.Funded({ fromBlock: "latest" }, (err, res) => {
+      if (err) return msgcb("Funding Failed");
+      const { airline, value } = res.returnValues;
+      const { name } = this.airlinesInfo.filter(a => a.address === airline)[0];
+      msgcb(`Funded ${name} with ${this.web3.utils.fromWei(value)} ether.`);
+    });
+  }
+
+  getRegisterAirlineEvent(cb) {
+    this.flightSuretyData.events.RegisterAirline(
+      { fromBlock: "latest" },
+      (err, res) => cb(err, res)
+    );
+  }
+
   getFlightStatusInfoEvent(cb) {
     this.flightSuretyApp.events.FlightStatusInfo(
       { fromBlock: "latest" },
@@ -93,11 +114,12 @@ export default class Contract {
   }
 
   getAllEvents() {
-    this.flightSuretyApp.events.allEvents({ fromBlock: 0 }, (err, res) =>
+    this.flightSuretyApp.events.allEvents({ fromBlock: "latest" }, (err, res) =>
       console.log(`event-A >>`, err, res)
     );
-    this.flightSuretyData.events.allEvents({ fromBlock: 0 }, (err, res) =>
-      console.log(`event-A >>`, err, res)
+    this.flightSuretyData.events.allEvents(
+      { fromBlock: "latest" },
+      (err, res) => console.log(`event-D >>`, err, res)
     );
   }
 }
