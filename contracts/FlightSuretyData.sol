@@ -14,7 +14,7 @@ contract FlightSuretyData {
   mapping(address => uint256) private authorizedContracts; 
   enum AirlineState { Unregistered, Registered, Funded }
   mapping(address => AirlineState) private airlines;
-  mapping(bytes32 => address[]) insuredFlight;
+  mapping(bytes32 => bool) insuredFlight;
   mapping(bytes32 => uint256) insuredPassanger;
   mapping(address => uint256) insurancePayout;
   /*************************************************************************/
@@ -142,8 +142,8 @@ contract FlightSuretyData {
   }
 
   event RegisterAirline(
-    address arline1,  AirlineState as1,
-    address arline2, AirlineState as2
+    address airline,  AirlineState as1,
+    address reqBy, AirlineState as2
   ); 
 
   /**
@@ -169,12 +169,13 @@ contract FlightSuretyData {
     );
 }
 
+  event RegisteredFlight(address airline, string flight, uint256 timestamp);
   function registerFlight(address airline, string flight, uint256 timestamp)
     external isCallerAuthorized
   {
     bytes32 flightKey = getFlightKey(airline, flight, timestamp);
-    address[] memory adr;
-    insuredFlight[flightKey] = adr;
+    insuredFlight[flightKey] = true;
+    emit RegisteredFlight(airline, flight, timestamp);
   }
 
 
@@ -185,10 +186,10 @@ contract FlightSuretyData {
       external payable requireBuyLimit() requireAirlineFunded(airline)
   {
     bytes32 flightKey = getFlightKey(airline, flight, timestamp);
+    require()
     bytes32 passangerKey = getPassangerKey(msg.sender, flightKey);
     require(insuredPassanger[passangerKey] == 0, 
       'Insurance previouly purchased');
-    insuredFlight[flightKey].push(msg.sender) ;
     insuredPassanger[passangerKey] = msg.value;
   }
 

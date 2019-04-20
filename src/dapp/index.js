@@ -32,51 +32,47 @@ import "./flightsurety.css";
     }
     if (!isOperational) return;
 
-    displayPassangers(contract);
-    displayAirlines(contract, DOM.elid("bi-flight"));
-    const ra = DOM.elid("ra-airline");
-    displayAirlines(contract, ra);
-    ra.selectedIndex = 1; // default airline to reg is second one
-    displayAirlines(contract, DOM.elid("ra-by"));
     displayAirlines(contract, DOM.elid("fa-airline"));
-    displayFlights(contract, DOM.elid("flight-number"));
-    displayFlights(contract, DOM.elid("ci-flight-number"));
+    DOM.elid("fund-airline").addEventListener("click", () => fa(contract));
+    contract.getFundAirlineEvent(msg => displayStatus(msg, "fa"));
 
-    DOM.elid("fund-airline").addEventListener("click", () =>
-      fund_airline(contract)
-    );
+    displayAirlines(contract, DOM.elid("ra-airline"), 1);
+    displayAirlines(contract, DOM.elid("ra-by"));
+    DOM.elid("register-airline").addEventListener("click", () => ra(contract));
+    contract.getRegisterAirlineEvent(msg => displayStatus(msg, "ra"));
 
-    contract.getFlightFundingEvent(display_faStatus);
+    displayFlights(contract, DOM.elid("rf-flight"));
+    DOM.elid("register-flight").addEventListener("click", () => rf(contract));
+    contract.getRegisterFlightEvent(msg => displayStatus(msg, "rf"));
 
-    DOM.elid("register-airline").addEventListener("click", () =>
-      register_airline(contract)
-    );
+    displayPassangers(contract, DOM.elid("bi-passangers"));
+    displayFlights(contract, DOM.elid("bi-flight"));
+    DOM.elid("buy-insurance").addEventListener("click", () => bi(contract));
+    contract.getBuyInsuranceEvent(msg => displayStatus(msg, "bi"));
 
-    contract.getFlightFundingEvent(display_raStatus);
-
-    DOM.elid("request-status").addEventListener("click", () =>
-      req_flight_click(contract)
-    );
+    displayFlights(contract, DOM.elid("rs-flight"));
+    DOM.elid("request-status").addEventListener("click", () => rs(contract));
     contract.getFlightStatusInfoEvent((err, res) =>
       req_flight_result(contract, err, res)
     );
+
+    displayPassangers(contract, DOM.elid("ci-passangers"));
+    displayFlights(contract, DOM.elid("ci-flight"));
   });
 })();
 
-function displayPassangers(contract) {
-  let passangerSelect = DOM.elid("bi-passangers");
-
+function displayPassangers(contract, select) {
   contract.passangersInfo.map(passanger => {
     let option = DOM.makeElement(
       `option`,
       { value: `${passanger.address}` },
       `${passanger.name}`
     );
-    passangerSelect.appendChild(option);
+    select.appendChild(option);
   });
 }
 
-function displayAirlines(contract, select) {
+function displayAirlines(contract, select, dflt) {
   contract.airlinesInfo.map(airline => {
     let option = DOM.makeElement(
       `option`,
@@ -85,6 +81,7 @@ function displayAirlines(contract, select) {
     );
     select.appendChild(option);
   });
+  if (dflt) select.selectedIndex = dflt;
 }
 
 function displayFlights(contract, select) {
@@ -112,39 +109,39 @@ function getAirline(select) {
   return { name, airline };
 }
 
-async function fund_airline(contract) {
+async function fa(contract) {
   const { airline, name } = getAirline(DOM.elid("fa-airline"));
   const amount = DOM.elid("fa-amount").value;
   let msg = `Funding ${name} Airline.`;
-
+  displayStatus(msg, "fa");
   try {
     await contract.fundAirline(airline, amount);
   } catch (e) {
     msg = `Error, ${msg}`;
     console.log(msg, e);
-    display_faStatus(msg);
+    displayStatus(msg, "fa");
   }
 }
 
-function display_faStatus(msg) {
-  remove_faStatus();
+function displayStatus(msg, dst) {
+  removeStatus(dst);
   const btn = DOM.makeElement(
     "btn",
-    { class: "btn-clr", id: "fa-clear" },
+    { class: "btn-clr", id: `${dst}-clear` },
     "Clear"
   );
-  const row = DOM.div({ class: "row", id: "faStatus" }, msg);
+  const row = DOM.div({ class: "row status", id: `${dst}Status` }, msg);
   row.appendChild(btn);
-  DOM.elid("fa").appendChild(row);
-  DOM.elid("fa-clear").addEventListener("click", remove_faStatus);
+  DOM.elid(dst).appendChild(row);
+  DOM.elid(`${dst}-clear`).addEventListener("click", () => removeStatus(dst));
 }
 
-function remove_faStatus() {
-  const faStatus = DOM.elid("faStatus");
-  if (faStatus) faStatus.remove();
+function removeStatus(dst) {
+  const status = DOM.elid(`${dst}Status`);
+  if (status) status.remove();
 }
 
-function register_airline(contract) {
+function ra(contract) {
   const { airline, name } = getAirline(DOM.elid("ra-airline"));
   const { airline: byAirline, name: byName } = getAirline(DOM.elid("ra-by"));
   try {
@@ -163,31 +160,50 @@ function register_airline(contract) {
   }
 }
 
-function display_raStatus(msg) {
-  remove_raStatus();
-  const btn = DOM.makeElement(
-    "btn",
-    { class: "btn-clr", id: "ra-clear" },
-    "Clear"
-  );
-  const row = DOM.div({ class: "row", id: "raStatus" }, msg);
-  row.appendChild(btn);
-  DOM.elid("ra").appendChild(row);
-  DOM.elid("ra-clear").addEventListener("click", remove_raStatus);
+function rf(contract) {
+  const { number, timestamp } = getFlight(DOM.elid("rf-flight"));
+  try {
+    contract.registerAirline(airline, byAirline, (error, result) => {
+      let msg = `Creating Airline For - ${name}.`;
+      if (error) msg = `Error, ${msg} ${error}`;
+      console.log("error", error);
+      console.log("result", result);
+      contract.web3.eth.getTransaction(result, (e, r) => {
+        console.log("e", e);
+        console.log("r", r);
+      });
+    });
+  } catch (e) {
+    console("reg air err", e);
+  }
 }
 
-function remove_raStatus() {
-  const raStatus = DOM.elid("raStatus");
-  if (raStatus) raStatus.remove();
+function getFlight(select) {
+  const selected = select.options[select.selectedIndex];
+  const airline = selected.getAttribute("value");
+  const name = selected.text;
+  return { name, airline };
 }
 
-function req_flight_click(contract) {
-  const flightSelect = DOM.elid("flight-number");
+function bi(contract) {
+  const flightSelect = DOM.elid("bi-flight");
   const selected = flightSelect.options[flightSelect.selectedIndex];
   const flight = selected.getAttribute("data-flight");
   const timestamp = selected.getAttribute("data-time");
   const airline = selected.getAttribute("data-airline");
-  console.log(contract);
+  contract.fetchFlightStatus(airline, flight, timestamp, (error, result) => {
+    let msg = `Fetching Flight Status For - ${flight}.`;
+    if (error) msg = `Error, ${msg} ${error}`;
+    display_rsStatus(msg);
+  });
+}
+
+function rs(contract) {
+  const flightSelect = DOM.elid("rs-flight");
+  const selected = flightSelect.options[flightSelect.selectedIndex];
+  const flight = selected.getAttribute("data-flight");
+  const timestamp = selected.getAttribute("data-time");
+  const airline = selected.getAttribute("data-airline");
   contract.fetchFlightStatus(airline, flight, timestamp, (error, result) => {
     let msg = `Fetching Flight Status For - ${flight}.`;
     if (error) msg = `Error, ${msg} ${error}`;

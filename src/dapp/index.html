@@ -32,16 +32,13 @@
 
     <main>
       <div class="container top">
-        <div id="display-wrapper" class="top-20">
           <div id="cos">
             Contract Operationl Status: <span id="cos-value">tbd</span>
           </div>
-        </div>
-        <div id="display-wrapper2" class="top-20"></div>
       </div>
 
       <div class="container" id="fa">
-        <div class="row top-20">
+        <div class="row">
           <btn class="btn btn-primary" id="fund-airline">
             Fund Airline
           </btn>
@@ -53,7 +50,7 @@
       </div>
 
       <div class="container" id="ra">
-        <div class="row top-20">
+        <div class="row">
           <btn class="btn btn-primary" id="register-airline">
             Register Airline
           </btn>
@@ -64,37 +61,50 @@
         </div>
       </div>
 
-      <div class="container">
-        <div class="row top-20">
-          <btn class="btn btn-primary" id="submit-buy-insurance">
+
+      <div class="container" id="rf">
+        <div class="row">
+          <btn class="btn btn-primary" id="register-flight">
+            Register Flight
+          </btn>
+          <label class="form">Flight</label>
+          <select type="text" id="rf-flight"></select>
+        </div>
+      </div>
+
+      <div class="container id="bi">
+        <div class="row">
+          <btn class="btn btn-primary" id="buy-insurance">
             Buy Insurance
           </btn>
           <label class="form">Passanger</label>
           <select id="bi-passangers"></select>
           <label class="form">Flight</label>
-          <select type="text" id="bi-flight" value="ND1309"></select>
+          <select type="text" id="bi-flight"></select>
           <label class="form">Ethers</label>
           <input type="text" id="bi-amount" value="1" size="5" />
         </div>
       </div>
 
       <div class="container" id="rs">
-        <div class="row top-20">
+        <div class="row">
           <btn class="btn btn-primary" id="request-status">
             Flight Status
           </btn>
           <label class="form">Flight</label>
-          <select type="text" id="flight-number"></select>
+          <select type="text" id="rs-flight"></select>
         </div>
       </div>
 
-      <div class="container">
-        <div class="row top-20">
-          <btn class="btn btn-primary" id="submit-claim-insurance">
+      <div class="container id="ci">
+        <div class="row">
+          <btn class="btn btn-primary" id="claim-insurance">
             Claim Insurance
           </btn>
+          <label class="form">Passanger</label>
+          <select id="ci-passangers"></select>
           <label class="form">Flight</label>
-          <select type="text" id="ci-flight-number"></select>
+          <select type="text" id="ci-flight"></select>
         </div>
       </div>
     </main>

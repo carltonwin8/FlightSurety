@@ -42,10 +42,11 @@ export default class Contract {
       const isAuth = await this.flightSuretyData.methods
         .isAuthorized()
         .call({ from: this.config.appAddress });
-      if (isAuth) return callback(null);
-      await this.flightSuretyData.methods
-        .authorizeCaller(this.config.appAddress)
-        .send({ from: this.owner });
+      if (!isAuth) {
+        await this.flightSuretyData.methods
+          .authorizeCaller(this.config.appAddress)
+          .send({ from: this.owner });
+      }
       return callback(null);
     } catch (e) {
       const msg = `Error! Blockchain up? Contract deployed? ${e}`;
@@ -71,26 +72,7 @@ export default class Contract {
       .send({ from, value: this.web3.utils.toWei(value) });
   }
 
-  registerAirline(airline, requestedBy, callback) {
-    try {
-      this.flightSuretyApp.methods
-        .registerAirline(airline)
-        .send({ from: requestedBy, gas: 2000000 }, (error, result) => {
-          callback(error, result);
-        });
-    } catch (e) {
-      console("reg air err", e);
-    }
-  }
-  fetchFlightStatus(airline, flight, timestamp, callback) {
-    this.flightSuretyApp.methods
-      .fetchFlightStatus(airline, flight, timestamp)
-      .send({ from: this.owner }, (error, result) => {
-        callback(error, result);
-      });
-  }
-
-  getFlightFundingEvent(msgcb) {
+  getFundAirlineEvent(msgcb) {
     this.flightSuretyData.events.Funded({ fromBlock: "latest" }, (err, res) => {
       if (err) return msgcb("Funding Failed");
       const { airline, value } = res.returnValues;
@@ -99,11 +81,72 @@ export default class Contract {
     });
   }
 
-  getRegisterAirlineEvent(cb) {
+  async registerAirline(airline, requestedBy) {
+    return await this.flightSuretyApp.methods
+      .registerAirline(airline)
+      .send({ from: requestedBy, gas: 2000000 });
+  }
+
+  getRegisterAirlineEvent(msgcb) {
     this.flightSuretyData.events.RegisterAirline(
       { fromBlock: "latest" },
-      (err, res) => cb(err, res)
+      (err, res) => {
+        if (err) return msgcb("Registering Airline Failed");
+        const { airline, reqBy, as1, as2 } = res.returnValues;
+        const { name: a } = this.airlinesInfo.filter(
+          a => a.address === airline
+        )[0];
+        const { name: rb } = this.airlinesInfo.filter(
+          a => a.address === reqBy
+        )[0];
+        const s1 = this.getStateStr(as1);
+        const s2 = this.getStateStr(as2);
+        msgcb(`${rb} registered ${a}. Relative states ${s2} and ${s1}`);
+      }
     );
+  }
+
+  async registerFlight(airline, flight, timestamp) {
+    return await this.flightSuretyApp.methods
+      .registerFlight(airline, flight, timestamp)
+      .send({ from: airline, gas: 2000000 });
+  }
+
+  getRegisterFlightEvent(msgcb) {
+    this.flightSuretyData.events.RegisteredFlight(
+      { fromBlock: "latest" },
+      (err, res) => {
+        if (err) return msgcb("Registering Airline Failed");
+        const { airline, flight, timestamp } = res.returnValues;
+        const { name } = this.airlinesInfo.filter(
+          a => a.address === airline
+        )[0];
+        msgcb(`Registered Flight ${flight} @ ${timestamp} on ${name}`);
+      }
+    );
+  }
+
+  async buyInsurance(airline, flight, timestamp, passanger) {
+    return await this.flightSuretyApp.methods
+      .registerAirline(airline)
+      .send({ from: requestedBy, gas: 2000000 });
+  }
+
+  getBuyInsuranceEvent(msgcb) {
+    this.flightSuretyData.events.Funded({ fromBlock: "latest" }, (err, res) => {
+      if (err) return msgcb("Funding Failed");
+      const { airline, value } = res.returnValues;
+      const { name } = this.airlinesInfo.filter(a => a.address === airline)[0];
+      msgcb(`Funded ${name} with ${this.web3.utils.fromWei(value)} ether.`);
+    });
+  }
+
+  fetchFlightStatus(airline, flight, timestamp, callback) {
+    this.flightSuretyApp.methods
+      .fetchFlightStatus(airline, flight, timestamp)
+      .send({ from: this.owner }, (error, result) => {
+        callback(error, result);
+      });
   }
 
   getFlightStatusInfoEvent(cb) {
@@ -121,5 +164,12 @@ export default class Contract {
       { fromBlock: "latest" },
       (err, res) => console.log(`event-D >>`, err, res)
     );
+  }
+
+  getStateStr(no) {
+    if (no === 0) return "Unregistered";
+    if (no === 1) return "Registered";
+    if (no === 2) return "Funded";
+    return "Unknown";
   }
 }

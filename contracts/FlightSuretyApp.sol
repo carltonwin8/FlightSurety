@@ -131,6 +131,7 @@ event RegisterAirline(address airline, address requestedBy);
   */  
   function registerFlight(address airline, string flight, uint256 timestamp) external
   {
+    require(airline == msg.sender, "Airlines must register flights for themselves"); 
     flightSuretyData.registerFlight(airline, flight, timestamp);
   }
   
