@@ -13,10 +13,10 @@ contract FlightSuretyData {
   function registerAirline(address airline, address requestedBy) external;
   function fund(address airline) public payable;
   function registerFlight(address airline, string flight, uint256 timestamp) external;
-  function buy(address airline, string flight, uint256 timestamp) external;
+  function buy(address airline, string flight, uint256 timestamp, address passanger) payable external;
   function creditInsurees(address airline, string flight, uint256 timestamp) external;
   function clearInsurees(address airline, string flight, uint256 timestamp) external;
-  function pay(uint256 n, uint256 d) external;
+  function pay(uint256 n, uint256 d, address passanger) external;
 }
 
 
@@ -135,6 +135,12 @@ event RegisterAirline(address airline, address requestedBy);
     flightSuretyData.registerFlight(airline, flight, timestamp);
   }
   
+  function buy(address airline, string flight, uint256 timestamp) payable external
+  {
+    require(msg.value <= 1 ether, "Insurance amount must be 1 ether or less."); 
+    flightSuretyData.buy.value(msg.value)(airline, flight, timestamp, msg.sender);
+  }
+
   /**
   * @dev Called after oracle has updated flight status
   */  
@@ -165,6 +171,11 @@ event RegisterAirline(address airline, address requestedBy);
       emit OracleRequest(index, airline, flight, timestamp);
   } 
 
+  
+  function claimInsurance() payable external
+  {
+    flightSuretyData.pay(3, 2, msg.sender);
+  }
 
 // region ORACLE MANAGEMENT
 

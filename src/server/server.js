@@ -61,8 +61,10 @@ let Oracles;
               const oIdx = oracleInfo.indexs;
               if (idx === oIdx[0] || idx === oIdx[1] || idx === oIdx[2]) {
                 //const airlineStatus = Math.floor(Math.random() * 5) * 10;
-                const airlineStatus = 10; // for debug
-                //const airlineStatus = 20; // for debug
+                // line below for debug
+                const airlineStatus = Flights.filter(
+                  f => f.number === flight
+                )[0].status;
                 console.log(
                   `${i} - ${idx} in ${oIdx} for oracle ${
                     oracleInfo.address
@@ -99,7 +101,7 @@ let Oracles;
       }
     );
 
-    /* */
+    /*
     const oracles = Oracles.map(oracle => oracle.address);
     const totalOracles = await flightSuretyApp.methods
       .getNoOracles()

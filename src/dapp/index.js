@@ -32,6 +32,8 @@ import "./flightsurety.css";
     }
     if (!isOperational) return;
 
+    await displayDcBalance(contract);
+
     displayAirlines(contract, DOM.elid("fa-airline"));
     DOM.elid("fund-airline").addEventListener("click", () => fa(contract));
     contract.getFundAirlineEvent(msg => displayStatus(msg, "fa"));
@@ -52,25 +54,14 @@ import "./flightsurety.css";
 
     displayFlights(contract, DOM.elid("rs-flight"));
     DOM.elid("request-status").addEventListener("click", () => rs(contract));
-    contract.getFlightStatusInfoEvent((err, res) =>
-      req_flight_result(contract, err, res)
-    );
+    contract.getFlightStatusInfoEvent(msg => displayStatus(msg, "rs"));
 
     displayPassangers(contract, DOM.elid("ci-passangers"));
-    displayFlights(contract, DOM.elid("ci-flight"));
+    //displayFlights(contract, DOM.elid("ci-flight"));
+    DOM.elid("claim-insurance").addEventListener("click", () => ci(contract));
+    contract.getClaimInsuranceEvent(msg => displayStatus(msg, "ci"));
   });
 })();
-
-function displayPassangers(contract, select) {
-  contract.passangersInfo.map(passanger => {
-    let option = DOM.makeElement(
-      `option`,
-      { value: `${passanger.address}` },
-      `${passanger.name}`
-    );
-    select.appendChild(option);
-  });
-}
 
 function displayAirlines(contract, select, dflt) {
   contract.airlinesInfo.map(airline => {
@@ -102,12 +93,29 @@ function displayFlights(contract, select) {
   });
 }
 
+function displayPassangers(contract, select) {
+  contract.passangersInfo.map(passanger => {
+    let option = DOM.makeElement(
+      `option`,
+      { value: `${passanger.address}` },
+      `${passanger.name}`
+    );
+    select.appendChild(option);
+  });
+}
+
 function getAirline(select) {
   const selected = select.options[select.selectedIndex];
   const airline = selected.getAttribute("value");
   const name = selected.text;
   return { name, airline };
 }
+
+const err = (e, msgIn, container) => {
+  const msg = `Error, ${msgIn}`;
+  console.log(msg, e);
+  displayStatus(msg, container);
+};
 
 async function fa(contract) {
   const { airline, name } = getAirline(DOM.elid("fa-airline"));
@@ -117,9 +125,7 @@ async function fa(contract) {
   try {
     await contract.fundAirline(airline, amount);
   } catch (e) {
-    msg = `Error, ${msg}`;
-    console.log(msg, e);
-    displayStatus(msg, "fa");
+    err(e, msg, "fa");
   }
 }
 
@@ -134,6 +140,7 @@ function displayStatus(msg, dst) {
   row.appendChild(btn);
   DOM.elid(dst).appendChild(row);
   DOM.elid(`${dst}-clear`).addEventListener("click", () => removeStatus(dst));
+  displayDcBalance();
 }
 
 function removeStatus(dst) {
@@ -141,101 +148,96 @@ function removeStatus(dst) {
   if (status) status.remove();
 }
 
-function ra(contract) {
+async function ra(contract) {
   const { airline, name } = getAirline(DOM.elid("ra-airline"));
   const { airline: byAirline, name: byName } = getAirline(DOM.elid("ra-by"));
+  let msg = `${byName} registering ${name}.`;
+  displayStatus(msg, "ra");
   try {
-    contract.registerAirline(airline, byAirline, (error, result) => {
-      let msg = `Creating Airline For - ${name}.`;
-      if (error) msg = `Error, ${msg} ${error}`;
-      console.log("error", error);
-      console.log("result", result);
-      contract.web3.eth.getTransaction(result, (e, r) => {
-        console.log("e", e);
-        console.log("r", r);
-      });
-    });
+    await contract.registerAirline(airline, byAirline);
   } catch (e) {
-    console("reg air err", e);
-  }
-}
-
-function rf(contract) {
-  const { number, timestamp } = getFlight(DOM.elid("rf-flight"));
-  try {
-    contract.registerAirline(airline, byAirline, (error, result) => {
-      let msg = `Creating Airline For - ${name}.`;
-      if (error) msg = `Error, ${msg} ${error}`;
-      console.log("error", error);
-      console.log("result", result);
-      contract.web3.eth.getTransaction(result, (e, r) => {
-        console.log("e", e);
-        console.log("r", r);
-      });
-    });
-  } catch (e) {
-    console("reg air err", e);
+    err(e, msg, "ra");
   }
 }
 
 function getFlight(select) {
   const selected = select.options[select.selectedIndex];
-  const airline = selected.getAttribute("value");
-  const name = selected.text;
-  return { name, airline };
-}
-
-function bi(contract) {
-  const flightSelect = DOM.elid("bi-flight");
-  const selected = flightSelect.options[flightSelect.selectedIndex];
   const flight = selected.getAttribute("data-flight");
   const timestamp = selected.getAttribute("data-time");
   const airline = selected.getAttribute("data-airline");
-  contract.fetchFlightStatus(airline, flight, timestamp, (error, result) => {
-    let msg = `Fetching Flight Status For - ${flight}.`;
-    if (error) msg = `Error, ${msg} ${error}`;
-    display_rsStatus(msg);
-  });
+  const description = selected.text;
+  return { airline, flight, timestamp, description };
 }
 
-function rs(contract) {
-  const flightSelect = DOM.elid("rs-flight");
-  const selected = flightSelect.options[flightSelect.selectedIndex];
-  const flight = selected.getAttribute("data-flight");
-  const timestamp = selected.getAttribute("data-time");
-  const airline = selected.getAttribute("data-airline");
-  contract.fetchFlightStatus(airline, flight, timestamp, (error, result) => {
-    let msg = `Fetching Flight Status For - ${flight}.`;
-    if (error) msg = `Error, ${msg} ${error}`;
-    display_rsStatus(msg);
-  });
-}
-
-function req_flight_result(contract, err, res) {
-  const airline = contract.airlinesInfo.filter(
-    airline => airline.address === res.returnValues.airline
-  )[0].name;
-  let msg = `Fetched Flight Status Of ${res.returnValues.status} For - ${
-    res.returnValues.flight
-  } @ ${res.returnValues.timestamp} on ${airline}`;
-  if (err) msg = `Error, ${msg} ${err}`;
-  display_rsStatus(msg);
-}
-
-function display_rsStatus(msg) {
-  remove_rsStatus();
-  const btn = DOM.makeElement(
-    "btn",
-    { class: "btn-clr", id: "request-status-clear" },
-    "Clear"
+async function rf(contract) {
+  const { airline, flight, timestamp, description } = getFlight(
+    DOM.elid("rf-flight")
   );
-  const row = DOM.div({ class: "row", id: "rsStatus" }, msg);
-  row.appendChild(btn);
-  DOM.elid("rs").appendChild(row);
-  DOM.elid("request-status-clear").addEventListener("click", remove_rsStatus);
+  let msg = `Registering flight ${description}.`;
+  displayStatus(msg, "rf");
+  try {
+    await contract.registerFlight(airline, flight, timestamp);
+  } catch (e) {
+    err(e, msg, "rf");
+  }
 }
 
-function remove_rsStatus() {
-  const rsStatus = DOM.elid("rsStatus");
-  if (rsStatus) rsStatus.remove();
+function getPassanger(select) {
+  const selected = select.options[select.selectedIndex];
+  const address = selected.getAttribute("value");
+  const name = selected.text;
+  return { name, address };
+}
+
+async function bi(contract) {
+  const { airline, flight, timestamp, description } = getFlight(
+    DOM.elid("bi-flight")
+  );
+  const { name, address } = getPassanger(DOM.elid("bi-passangers"));
+  const amount = DOM.elid("bi-amount").value;
+  let msg = `Buying insurance for ${name} on flight ${description} for ${amount} ethers.`;
+  displayStatus(msg, "bi");
+  try {
+    await contract.buyInsurance(airline, flight, timestamp, address, amount);
+  } catch (e) {
+    err(e, msg, "bi");
+  }
+}
+
+async function rs(contract) {
+  const { airline, flight, timestamp, description } = getFlight(
+    DOM.elid("rs-flight")
+  );
+  let msg = `Fetching flight status for ${description}.`;
+  displayStatus(msg, "rs");
+  try {
+    await contract.fetchFlightStatus(airline, flight, timestamp);
+  } catch (e) {
+    err(e, msg, "rs");
+  }
+}
+
+async function ci(contract) {
+  /*
+  const { airline, flight, timestamp, description } = getFlight(
+    DOM.elid("ci-flight")
+  );
+  */
+  const { name, address } = getPassanger(DOM.elid("ci-passangers"));
+  let msg = `Claiming insurance for ${name} on ${description}.`;
+  displayStatus(msg, "ci");
+  try {
+    await contract.claimInsurance(address);
+  } catch (e) {
+    err(e, msg, "ci");
+  }
+}
+
+async function displayDcBalance(contract) {
+  try {
+    const balance = await contract.dataContractBalance();
+    DOM.elid("dc-balance").innerHTML = balance;
+  } catch (e) {
+    console.log("Getting data contract balance failed with error =>", e);
+  }
 }

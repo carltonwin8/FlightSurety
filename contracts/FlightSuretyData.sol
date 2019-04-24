@@ -15,6 +15,7 @@ contract FlightSuretyData {
   enum AirlineState { Unregistered, Registered, Funded }
   mapping(address => AirlineState) private airlines;
   mapping(bytes32 => bool) insuredFlight;
+  mapping(bytes32 => address[]) flightKey2Passangers;
   mapping(bytes32 => uint256) insuredPassanger;
   mapping(address => uint256) insurancePayout;
   /*************************************************************************/
@@ -63,11 +64,6 @@ contract FlightSuretyData {
     require(authorizedContracts[msg.sender] == 1, "Caller is not authorized");
     _;
   }
-  modifier requireBuyLimit()
-  {
-    require(msg.value <= 1, "Insurance purchase has to be 1 ether or less");
-    _;
-  }
   modifier requireAirlineFunded(address adr)
   {
     require(airlines[adr] == AirlineState.Funded, 
@@ -97,11 +93,6 @@ contract FlightSuretyData {
   {
     if (authorizedContracts[msg.sender] == 1) return true;
     return false;
-  }
-
-  function airlineState(address airline) public view returns(AirlineState)
-  {
-    return airlines[airline];
   }
 
   /**
@@ -182,15 +173,18 @@ contract FlightSuretyData {
   /**
   * @dev Buy insurance for a flight
   */   
-  function buy(address airline, string flight, uint256 timestamp)
-      external payable requireBuyLimit() requireAirlineFunded(airline)
+  event Buy(address airline, string flight, uint256 timestamp, address passanger, uint256 amount);
+  function buy(address airline, string flight, uint256 timestamp, address passanger)
+      external payable requireAirlineFunded(airline)
   {
     bytes32 flightKey = getFlightKey(airline, flight, timestamp);
-    require()
-    bytes32 passangerKey = getPassangerKey(msg.sender, flightKey);
+    require(insuredFlight[flightKey] == true, "Flight not insured");
+    bytes32 passangerKey = getPassangerKey(passanger, flightKey);
     require(insuredPassanger[passangerKey] == 0, 
-      'Insurance previouly purchased');
+      'Insurance previouly purchased for flight');
+    flightKey2Passangers[flightKey].push(passanger);
     insuredPassanger[passangerKey] = msg.value;
+    emit Buy(airline, flight, timestamp, passanger, msg.value);
   }
 
   /**
@@ -200,12 +194,14 @@ contract FlightSuretyData {
     external requireAirlineFunded(airline)
   {
     bytes32 flightKey = getFlightKey(airline, flight, timestamp);
-    require (insuredFlight[flightKey].length >= 0, "passanger not insured");
-    address[] memory passangers = insuredFlight[flightKey];
+    require (insuredFlight[flightKey] == true, "flight not insured");
+    address[] memory passangers = flightKey2Passangers[flightKey];
     for (uint i; i < passangers.length; i++) {
       address passanger = passangers[i];
       bytes32 passangerKey = getPassangerKey(passanger, flightKey);
-      insurancePayout[passanger].add(insuredPassanger[passangerKey]);
+      uint256 refundAmount = insuredPassanger[passangerKey];
+      delete insuredPassanger[passangerKey];
+      insurancePayout[passanger].add(refundAmount);
     }
     delete insuredFlight[flightKey];
   }
@@ -223,11 +219,13 @@ contract FlightSuretyData {
   /**
     *  @dev Transfers eligible payout funds to insuree
   */
-  function pay(uint256 n, uint256 d) external payable requirePassangerFunded()
+  event Pay(address passanger, uint256 amount);
+  function pay(uint256 n, uint256 d, address passanger) external payable requirePassangerFunded()
   {
     uint payout = insurancePayout[msg.sender].mul(n).div(d);
     delete insurancePayout[msg.sender];
-    contractOwner.transfer(payout);
+    passanger.transfer(payout);
+    emit Pay(passanger, payout);
   }
 
   /**

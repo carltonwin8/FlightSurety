@@ -9,12 +9,14 @@ body {
   background-color: #000;
   opacity: 0.9;
   color: #fff;
-  padding: 20px 40px;
+  padding: 20px 30px;
 }
 
 .container.top {
   margin-top: 70px;
-  padding: 20px 20px;
+  padding: 20px 15px;
+  display: flex;
+  justify-content: space-between;
 }
 
 h5 {
@@ -36,8 +38,8 @@ section {
 }
 
 label.form {
-  margin-right: 10px;
-  margin-left: 20px;
+  margin-right: 8px;
+  margin-left: 16px;
 }
 
 input {
@@ -45,14 +47,14 @@ input {
 }
 
 .btn {
-  width: 150px;
+  width: 140px;
 }
 
 #cos {
   font-weight: bold;
 }
 
-#cos-value {
+.cos {
   color: #0e7fa8;
 }
 

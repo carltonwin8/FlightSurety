@@ -55,15 +55,21 @@ export default class Contract {
     }
   }
 
+  getAllEvents() {
+    this.flightSuretyApp.events.allEvents({ fromBlock: "latest" }, (err, res) =>
+      console.log(`event-A >>`, err, res)
+    );
+    this.flightSuretyData.events.allEvents(
+      { fromBlock: "latest" },
+      (err, res) => console.log(`event-D >>`, err, res)
+    );
+  }
+
   isOperational(callback) {
     let self = this;
     self.flightSuretyApp.methods
       .isOperational()
       .call({ from: self.owner }, callback);
-  }
-
-  async airlineState(airline) {
-    return await this.flightSuretyData.methods.airlineState(airline).call();
   }
 
   async fundAirline(from, value) {
@@ -72,13 +78,30 @@ export default class Contract {
       .send({ from, value: this.web3.utils.toWei(value) });
   }
 
+  getAirlineNameFromAddress(address) {
+    const { name } = this.airlinesInfo.filter(a => a.address === address)[0];
+    return name;
+  }
   getFundAirlineEvent(msgcb) {
     this.flightSuretyData.events.Funded({ fromBlock: "latest" }, (err, res) => {
       if (err) return msgcb("Funding Failed");
       const { airline, value } = res.returnValues;
-      const { name } = this.airlinesInfo.filter(a => a.address === airline)[0];
+      const name = this.getAirlineNameFromAddress(airline);
       msgcb(`Funded ${name} with ${this.web3.utils.fromWei(value)} ether.`);
     });
+  }
+
+  getStateStr(no) {
+    switch (no) {
+      case "0":
+        return "Unregistered";
+      case "1":
+        return "Registered";
+      case "2":
+        return "Funded";
+      default:
+        return "Unknown";
+    }
   }
 
   async registerAirline(airline, requestedBy) {
@@ -93,12 +116,8 @@ export default class Contract {
       (err, res) => {
         if (err) return msgcb("Registering Airline Failed");
         const { airline, reqBy, as1, as2 } = res.returnValues;
-        const { name: a } = this.airlinesInfo.filter(
-          a => a.address === airline
-        )[0];
-        const { name: rb } = this.airlinesInfo.filter(
-          a => a.address === reqBy
-        )[0];
+        const a = this.getAirlineNameFromAddress(airline);
+        const rb = this.getAirlineNameFromAddress(reqBy);
         const s1 = this.getStateStr(as1);
         const s2 = this.getStateStr(as2);
         msgcb(`${rb} registered ${a}. Relative states ${s2} and ${s1}`);
@@ -116,60 +135,101 @@ export default class Contract {
     this.flightSuretyData.events.RegisteredFlight(
       { fromBlock: "latest" },
       (err, res) => {
-        if (err) return msgcb("Registering Airline Failed");
+        if (err) return msgcb("Registering Flight Failed");
         const { airline, flight, timestamp } = res.returnValues;
-        const { name } = this.airlinesInfo.filter(
-          a => a.address === airline
-        )[0];
+        const name = this.getAirlineNameFromAddress(airline);
         msgcb(`Registered Flight ${flight} @ ${timestamp} on ${name}`);
       }
     );
   }
 
-  async buyInsurance(airline, flight, timestamp, passanger) {
+  async buyInsurance(airline, flight, timestamp, passanger, amount) {
+    console.log(amount);
     return await this.flightSuretyApp.methods
-      .registerAirline(airline)
-      .send({ from: requestedBy, gas: 2000000 });
-  }
-
-  getBuyInsuranceEvent(msgcb) {
-    this.flightSuretyData.events.Funded({ fromBlock: "latest" }, (err, res) => {
-      if (err) return msgcb("Funding Failed");
-      const { airline, value } = res.returnValues;
-      const { name } = this.airlinesInfo.filter(a => a.address === airline)[0];
-      msgcb(`Funded ${name} with ${this.web3.utils.fromWei(value)} ether.`);
-    });
-  }
-
-  fetchFlightStatus(airline, flight, timestamp, callback) {
-    this.flightSuretyApp.methods
-      .fetchFlightStatus(airline, flight, timestamp)
-      .send({ from: this.owner }, (error, result) => {
-        callback(error, result);
+      .buy(airline, flight, timestamp)
+      .send({
+        from: passanger,
+        value: this.web3.utils.toWei(amount),
+        gas: 2000000
       });
   }
 
-  getFlightStatusInfoEvent(cb) {
+  getPassanger = pa =>
+    this.passangersInfo.filter(p => p.address === pa)[0].name;
+
+  getBuyInsuranceEvent(msgcb) {
+    this.flightSuretyData.events.Buy({ fromBlock: "latest" }, (err, res) => {
+      if (err) return msgcb("Buying Insurance Failed");
+      const {
+        airline,
+        flight,
+        timestamp,
+        passanger,
+        amount
+      } = res.returnValues;
+      const al = this.getAirlineNameFromAddress(airline);
+      const p = this.getPassanger(passanger);
+      let msg = `Bought ${this.web3.utils.fromWei(amount)} ether worth of`;
+      msg += ` insurance for ${p} on ${flight} @ ${timestamp} on ${al}.`;
+      msgcb(msg);
+    });
+  }
+
+  getFlightStatusStr(no) {
+    switch (no) {
+      case "0":
+        return "Unknown";
+      case "10":
+        return "On Time";
+      case "20":
+        return "Late Airline";
+      case "30":
+        return "Late Weather";
+      case "40":
+        return "Late Technical";
+      case "50":
+        return "Late Other";
+      default:
+        return "Really Unknown";
+    }
+  }
+
+  async fetchFlightStatus(airline, flight, timestamp) {
+    await this.flightSuretyApp.methods
+      .fetchFlightStatus(airline, flight, timestamp)
+      .send({ from: this.owner });
+  }
+
+  getFlightStatusInfoEvent(msgcb) {
     this.flightSuretyApp.events.FlightStatusInfo(
       { fromBlock: "latest" },
-      (err, res) => cb(err, res)
+      (err, res) => {
+        if (err) return msgcb("Failed getting flight status");
+        const { airline, flight, timestamp, status } = res.returnValues;
+        const al = this.getAirlineNameFromAddress(airline);
+        const ss = this.getFlightStatusStr(status);
+        msgcb(`${flight} @ ${timestamp} on ${al} status was: ${ss}`);
+      }
     );
   }
 
-  getAllEvents() {
-    this.flightSuretyApp.events.allEvents({ fromBlock: "latest" }, (err, res) =>
-      console.log(`event-A >>`, err, res)
-    );
-    this.flightSuretyData.events.allEvents(
-      { fromBlock: "latest" },
-      (err, res) => console.log(`event-D >>`, err, res)
-    );
+  async claimInsurance(address) {
+    return await this.flightSuretyApp.methods
+      .claimInsurance()
+      .send({ from: address });
   }
 
-  getStateStr(no) {
-    if (no === 0) return "Unregistered";
-    if (no === 1) return "Registered";
-    if (no === 2) return "Funded";
-    return "Unknown";
+  getClaimInsuranceEvent(msgcb) {
+    this.flightSuretyData.events.Pay({ fromBlock: "latest" }, (err, res) => {
+      if (err) return msgcb("Failed getting payout");
+      const { passanger, payout } = res.returnValues;
+      const p = this.getPassanger(passanger);
+      msgcb(`${p} payed ${payout}`);
+    });
+  }
+
+  async dataContractBalance() {
+    const balance = await this.web3.eth.getBalance(this.config.dataAddress);
+    return this.web3.utils.fromWei(balance);
   }
 }

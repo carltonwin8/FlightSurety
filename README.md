@@ -71,4 +71,9 @@ The allocation of the address follows.
 
 Everything below this line can be ignored as they are just notes to myself.
 
-Read the student hub up to 4/16/19.
+Read the student hub up to 4/22/19.
+
+Recommended Gas And Price
+
+"gas": 4712388,
+"gasPrice": 100000000000
