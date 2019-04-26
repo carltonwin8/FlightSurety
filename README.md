@@ -77,3 +77,77 @@ Recommended Gas And Price
 
 "gas": 4712388,
 "gasPrice": 100000000000
+
+## Functions And Modifiers
+
+Key for the tables below follows
+
+- I/E - i = internal, e = external, ip = internal pure
+- UB - used by
+  - app contract
+  - data contract
+- SF - Short Form - Abbreviation - for modifiers
+- MR - Modifiers required - use from SF in table - 0/- = none
+
+### FlightSuretyData.sol
+
+| Modifiers               | SF  | ToDo |
+| ----------------------- | --- | ---- |
+| requireIsOperational    | io  | -    |
+| requireContractOwner    | co  | -    |
+| isCallerAuthorized      | ca  | -    |
+| requireAirlineFunded    | af  | -    |
+| requireFlightRegistered | fr  | todo |
+| requirePassangerFunded  | pf  | -    |
+
+| Functions          | I/E | MR     |
+| ------------------ | --- | ------ |
+| isOperational      | e   | -      |
+| isAuthorized       | e   | -      |
+| setOperatingStatus | e   | co     |
+| getFlightKey       | ip  | -      |
+| getPassangerKey    | ip  | -      |
+| authorizeCaller    | e   | co     |
+| deauthorizeCaller  | e   | co     |
+| fund               | e   | ca     |
+| registerAirline    | e   | ca, af |
+| registerFlight     | e   | ca, af |
+| buy                | e   | ca, fr |
+| creditInsurees     | e   | ca, fr |
+| clearInsurees      | e   | ca, fr |
+| passangerCredit    | e   | -      |
+| pay                | e   | ca, pf |
+
+### FlightSuretyApp.sol
+
+| Modifiers                | SF  | ToDo |
+| ------------------------ | --- | ---- |
+| requireIsOperational     | io  | -    |
+| requireContractOwner     | co  | -    |
+| requireAirlineRegistered | ar  | todo |
+
+CB - called by
+
+- cg = client web gui
+- s = server
+- ct = client test in flightSurity.js
+- st = server test in oracles.js
+- nn/- = no one - internal
+
+| Functions            | I/E | MR  | CB     | ToDo |
+| -------------------- | --- | --- | ------ | ---- |
+| isOperational        | e   | -   | cg, ct | -    |
+| registerAirline      | e   | co  | cg, ct | -    |
+| fundAirline          | e   | -   | cg, ct | -    |
+| registerFlight       | e   | -   | cg,    | ct   |
+| buy                  | e   | -   | tbd    |
+| processFlightStatus  | e   | -   | tbd    |
+| fetchFlightStatus    | e   | -   | tbd    |
+| claimInsurance       | e   | -   | tbd    |
+| passangerCredit      | e   | -   | tbd    |
+| getNoOracles         | e   | -   | tbd    |
+| registerOracle       | e   | -   | tbd    |
+| getMyIndexes         | e   | -   | tbd    |
+| submitOracleResponse | e   | -   | tbd    |
+| generateIndexes      | i   | -   | -      |
+| getRandomIndex       | i   | -   | -      |

@@ -9,10 +9,10 @@ import "./flightsurety.css";
     // Read transaction
     if (error) return (DOM.elid("cos-value").innerHTML = error);
 
-    let isOperational;
+    let isOper;
     const opStatu = DOM.elid("cos-value");
     try {
-      isOperational = await new Promise(resolve => {
+      isOper = await new Promise(resolve => {
         contract.isOperational((error, result) => {
           if (error) {
             opStatu.textContent =
@@ -30,9 +30,9 @@ import "./flightsurety.css";
       opStatu.value = msg;
       return;
     }
-    if (!isOperational) return;
+    if (!isOper) return;
 
-    await displayDcBalance(contract);
+    await displayBalance(contract);
 
     displayAirlines(contract, DOM.elid("fa-airline"));
     DOM.elid("fund-airline").addEventListener("click", () => fa(contract));
@@ -57,8 +57,8 @@ import "./flightsurety.css";
     contract.getFlightStatusInfoEvent(msg => displayStatus(msg, "rs"));
 
     displayPassangers(contract, DOM.elid("ci-passangers"));
-    //displayFlights(contract, DOM.elid("ci-flight"));
     DOM.elid("claim-insurance").addEventListener("click", () => ci(contract));
+    DOM.elid("view-credit").addEventListener("click", () => vc(contract));
     contract.getClaimInsuranceEvent(msg => displayStatus(msg, "ci"));
   });
 })();
@@ -127,6 +127,7 @@ async function fa(contract) {
   } catch (e) {
     err(e, msg, "fa");
   }
+  await displayBalance(contract);
 }
 
 function displayStatus(msg, dst) {
@@ -137,10 +138,9 @@ function displayStatus(msg, dst) {
     "Clear"
   );
   const row = DOM.div({ class: "row status", id: `${dst}Status` }, msg);
-  row.appendChild(btn);
+  row.insertBefore(btn, row.firstChild);
   DOM.elid(dst).appendChild(row);
   DOM.elid(`${dst}-clear`).addEventListener("click", () => removeStatus(dst));
-  displayDcBalance();
 }
 
 function removeStatus(dst) {
@@ -158,6 +158,7 @@ async function ra(contract) {
   } catch (e) {
     err(e, msg, "ra");
   }
+  await displayBalance(contract);
 }
 
 function getFlight(select) {
@@ -180,6 +181,7 @@ async function rf(contract) {
   } catch (e) {
     err(e, msg, "rf");
   }
+  await displayBalance(contract);
 }
 
 function getPassanger(select) {
@@ -195,13 +197,15 @@ async function bi(contract) {
   );
   const { name, address } = getPassanger(DOM.elid("bi-passangers"));
   const amount = DOM.elid("bi-amount").value;
-  let msg = `Buying insurance for ${name} on flight ${description} for ${amount} ethers.`;
+  let msg = `Buying insurance for ${name} on flight `;
+  msg += `${description} for ${amount} ethers.`;
   displayStatus(msg, "bi");
   try {
     await contract.buyInsurance(airline, flight, timestamp, address, amount);
   } catch (e) {
     err(e, msg, "bi");
   }
+  await displayBalance(contract);
 }
 
 async function rs(contract) {
@@ -215,29 +219,78 @@ async function rs(contract) {
   } catch (e) {
     err(e, msg, "rs");
   }
+  await displayBalance(contract);
 }
 
 async function ci(contract) {
-  /*
-  const { airline, flight, timestamp, description } = getFlight(
-    DOM.elid("ci-flight")
-  );
-  */
   const { name, address } = getPassanger(DOM.elid("ci-passangers"));
-  let msg = `Claiming insurance for ${name} on ${description}.`;
+  let msg = `Claiming insurance for ${name}.`;
   displayStatus(msg, "ci");
   try {
     await contract.claimInsurance(address);
   } catch (e) {
     err(e, msg, "ci");
   }
+  await displayBalance(contract);
 }
 
-async function displayDcBalance(contract) {
+async function vc(contract) {
+  const { name, address } = getPassanger(DOM.elid("ci-passangers"));
+  let msg = `Getting insurance for ${name}.`;
+  displayStatus(msg, "ci");
   try {
-    const balance = await contract.dataContractBalance();
-    DOM.elid("dc-balance").innerHTML = balance;
+    const credit = await contract.passangerCredit(address);
+    msg = `${name} has a credit of ${credit} ether.`;
+    displayStatus(msg, "ci");
+  } catch (e) {
+    err(e, msg, "ci");
+  }
+  await displayBalance(contract);
+}
+
+async function displayBalance(contract) {
+  try {
+    const { data, app } = await contract.getContractBalances();
+    DOM.elid("dc-balance").innerHTML = data;
+    DOM.elid("ac-balance").innerHTML = app;
+    const groups = await contract.getBalances();
+    displayBalances(groups);
   } catch (e) {
     console.log("Getting data contract balance failed with error =>", e);
   }
+}
+
+async function displayBalances(groups) {
+  const grpBndry = [];
+  groups.map(group => grpBndry.push(group.length));
+  const elements = grpBndry.reduce((a, b) => a + b, 0);
+
+  let idx = 0;
+  let group = 0;
+  let groupIdx = 0;
+  const COLS = 2;
+  let ROWS = elements / 2;
+  if (elements % ROWS) ROWS++;
+
+  const table = DOM.makeElement(`table`, { id: "removeTable" });
+  for (let row = 0; row < ROWS; row++) {
+    const tr = DOM.makeElement(`tr`);
+    for (let col = 0; col < 2; col++) {
+      idx = row + col;
+      if (idx === grpBndry[group]) {
+        groupIdx = 0;
+        group++;
+      }
+      const item = groups[group][groupIdx];
+      let td = DOM.makeElement(`td`, { class: "first" }, item.name);
+      tr.appendChild(td);
+      td = DOM.makeElement(`td`, item.balance);
+      tr.appendChild(td);
+      groupIdx++;
+    }
+    table.appendChild(tr);
+  }
+  const oldTable = DOM.elid("removeTable");
+  if (oldTable) oldTable.parentNode.removeChild(oldTable);
+  balances.appendChild(table);
 }

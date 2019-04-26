@@ -56,13 +56,30 @@ export default class Contract {
   }
 
   getAllEvents() {
-    this.flightSuretyApp.events.allEvents({ fromBlock: "latest" }, (err, res) =>
-      console.log(`event-A >>`, err, res)
-    );
-    this.flightSuretyData.events.allEvents(
-      { fromBlock: "latest" },
-      (err, res) => console.log(`event-D >>`, err, res)
-    );
+    try {
+      this.flightSuretyApp.events.allEvents(
+        { fromBlock: "latest" },
+        (err, res) =>
+          console.log(
+            `event-A >>`,
+            err,
+            res && res.event ? res.event : "",
+            res && res.returnValues ? res.returnValues : ""
+          )
+      );
+      this.flightSuretyData.events.allEvents(
+        { fromBlock: "latest" },
+        (err, res) =>
+          console.log(
+            `event-D >>`,
+            err,
+            res && res.event ? res.event : "",
+            res && res.returnValues ? res.returnValues : ""
+          )
+      );
+    } catch (e) {
+      console.error("Failed getting events due to:", e);
+    }
   }
 
   isOperational(callback) {
@@ -144,7 +161,6 @@ export default class Contract {
   }
 
   async buyInsurance(airline, flight, timestamp, passanger, amount) {
-    console.log(amount);
     return await this.flightSuretyApp.methods
       .buy(airline, flight, timestamp)
       .send({
@@ -221,15 +237,39 @@ export default class Contract {
 
   getClaimInsuranceEvent(msgcb) {
     this.flightSuretyData.events.Pay({ fromBlock: "latest" }, (err, res) => {
-      if (err) return msgcb("Failed getting payout");
-      const { passanger, payout } = res.returnValues;
+      if (err) return msgcb(`Failed getting payout. ${err}`);
+      const { passanger, amount } = res.returnValues;
       const p = this.getPassanger(passanger);
-      msgcb(`${p} payed ${payout}`);
+      msgcb(`${p} payed ${this.web3.utils.fromWei(amount)} ether.`);
     });
   }
 
-  async dataContractBalance() {
-    const balance = await this.web3.eth.getBalance(this.config.dataAddress);
-    return this.web3.utils.fromWei(balance);
+  async passangerCredit(address) {
+    const credit = await this.flightSuretyApp.methods
+      .passangerCredit()
+      .call({ from: address, gas: 4712388, gasPrice: 100000000000 });
+    return this.web3.utils.fromWei(credit);
+  }
+
+  async getContractBalances() {
+    const dbal = await this.web3.eth.getBalance(this.config.dataAddress);
+    const data = this.web3.utils.fromWei(dbal);
+    const abal = await this.web3.eth.getBalance(this.config.appAddress);
+    const app = this.web3.utils.fromWei(abal);
+    return { data, app };
+  }
+
+  async getBalances() {
+    const passangers = [];
+    for (let i = 0; i < this.passangersInfo.length; i++) {
+      const p = this.passangersInfo[i];
+      const b = await this.web3.eth.getBalance(p.address);
+      const bal = this.web3.utils.fromWei(b);
+      const [n, d] = bal.split(".");
+      const den = d ? d.slice(0, 4) : "0000";
+      const balance = `${n}.${den}`;
+      passangers.push({ ...p, balance });
+    }
+    return [passangers];
   }
 }

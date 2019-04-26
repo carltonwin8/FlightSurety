@@ -101,7 +101,7 @@ let Oracles;
       }
     );
 
-    /*
+    /* */
     const oracles = Oracles.map(oracle => oracle.address);
     const totalOracles = await flightSuretyApp.methods
       .getNoOracles()

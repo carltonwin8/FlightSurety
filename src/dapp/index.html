@@ -32,12 +32,18 @@
 
     <main>
       <div class="container top">
-          <div id="cos">
-            Contract Operationl Status: <span id="cos-value" class="cos">tbd</span>
-          </div>
-          <div>
-            Data Contact Balance: <span id="dc-balance" class="cos">tbd</span> Ether
-          </div>
+        <div id="cos">
+          Contract Operationl Status:
+          <span id="cos-value" class="cos">tbd</span>
+        </div>
+        <div>
+          App Contact Balance:
+          <span id="ac-balance" class="cos">tbd</span> Ether
+        </div>
+        <div>
+          Data Contact Balance:
+          <span id="dc-balance" class="cos">tbd</span> Ether
+        </div>
       </div>
 
       <div class="container" id="fa">
@@ -63,7 +69,6 @@
           <select type="text" id="ra-by"></select>
         </div>
       </div>
-
 
       <div class="container" id="rf">
         <div class="row">
@@ -99,17 +104,21 @@
         </div>
       </div>
 
-      <div class="container id="ci">
+      <div class="container" id="ci">
         <div class="row">
           <btn class="btn btn-primary" id="claim-insurance">
             Claim Insurance
           </btn>
           <label class="form">Passanger</label>
           <select id="ci-passangers"></select>
-          <!--
-          <label class="form">Flight</label>
-          <select type="text" id="ci-flight"></select>            
-          -->
+          <btn class="btn btn-primary credit" id="view-credit">
+            View Credit
+          </btn>
+        </div>
+      </div>
+      <div class="container" id="balances">
+        <div id="cos" class="balances">
+          Balances
         </div>
       </div>
     </main>

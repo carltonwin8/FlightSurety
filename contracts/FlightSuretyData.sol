@@ -8,15 +8,16 @@ contract FlightSuretyData {
   /*************************************************************************/
   /*                                       DATA VARIABLES                   /
   /*************************************************************************/
-  address private contractOwner; 
+  address private contractOwner;
   bool private operational = true;
   uint8 airlinesNo = 0;
-  mapping(address => uint256) private authorizedContracts; 
+  mapping(address => uint256) private authorizedContracts;
   enum AirlineState { Unregistered, Registered, Funded }
   mapping(address => AirlineState) private airlines;
-  mapping(bytes32 => bool) insuredFlight;
-  mapping(bytes32 => address[]) flightKey2Passangers;
-  mapping(bytes32 => uint256) insuredPassanger;
+  struct Passanger { address adr; uint256 amount; }
+  struct Flight { bool insured; Passanger []passangers; }
+  mapping(bytes32 => Flight) insuredFlight;
+  mapping(bytes32 => bool) insuredPassanger;
   mapping(address => uint256) insurancePayout;
   /*************************************************************************/
   /*                                       EVENT DEFINITIONS                /
@@ -26,7 +27,7 @@ contract FlightSuretyData {
   * @dev Constructor
   *      The deploying account becomes contractOwner
   */
-  constructor(address initialAirline)public 
+  constructor(address initialAirline)public
   {
     contractOwner = msg.sender;
     airlines[initialAirline] = AirlineState.Registered;
@@ -41,17 +42,17 @@ contract FlightSuretyData {
 
   /**
   * @dev Modifier that requires the "operational" boolean variable to be "true"
-  *      This is used on all state changing functions to pause the contract in 
+  *      This is used on all state changing functions to pause the contract in
   *      the event there is an issue that needs to be fixed
   */
-  modifier requireIsOperational() 
+  modifier requireIsOperational()
   {
     require(operational, "Contract is currently not operational");
-    _; 
+    _;
   }
 
   /**
-  * @dev Modifier that requires the "ContractOwner" account to be the 
+  * @dev Modifier that requires the "ContractOwner" account to be the
   *      function caller
   */
   modifier requireContractOwner()
@@ -66,16 +67,16 @@ contract FlightSuretyData {
   }
   modifier requireAirlineFunded(address adr)
   {
-    require(airlines[adr] == AirlineState.Funded, 
+    require(airlines[adr] == AirlineState.Funded,
       "Airline not registered or not funded");
     _;
-  } 
-  modifier requirePassangerFunded()
+  }
+  modifier requirePassangerFunded(address passanger)
   {
-    require(insurancePayout[msg.sender] != 0 , 
+    require(insurancePayout[passanger] != 0,
       "Passanger does not exist, did not buy insurance, or flight on time");
     _;
-  } 
+  }
   /*************************************************************************/
   /*                                       UTILITY FUNCTIONS                /
   /*************************************************************************/
@@ -83,8 +84,8 @@ contract FlightSuretyData {
   /**
   * @dev Get operating status of contract
   * @return A bool that is the current operating status
-  */      
-  function isOperational() public view returns(bool) 
+  */
+  function isOperational() public view returns(bool)
   {
     return operational;
   }
@@ -99,24 +100,23 @@ contract FlightSuretyData {
   * @dev Sets contract operations on/off
   * When operational mode is disabled, all write transactions except for this
   * one will fail
-  */    
-  function setOperatingStatus(bool mode) external requireContractOwner 
+  */
+  function setOperatingStatus(bool mode) external requireContractOwner
   {
     operational = mode;
   }
 
-  function isAirline(address airline) public view requireContractOwner
-    returns(bool)
+  function getFlightKey (
+    address airline, string memory flight, uint256 timestamp
+  ) pure internal returns(bytes32)
   {
-    if (airlines[airline] == AirlineState.Unregistered) return false;
-    return true;
+    return keccak256(abi.encodePacked(airline, flight, timestamp));
   }
 
-
-  function airlineStatus(address airline) public view requireContractOwner
-    returns(AirlineState)
+  function getPassangerKey (address passanger, bytes32 flightKey)
+    pure internal returns(bytes32)
   {
-    return airlines[airline];
+    return keccak256(abi.encodePacked(passanger, flightKey));
   }
 
   /*************************************************************************/
@@ -126,7 +126,7 @@ contract FlightSuretyData {
   {
     authorizedContracts[adr] = 1;
   }
-  
+
   function deauthorizeCaller(address adr) external requireContractOwner
   {
     delete authorizedContracts[adr];
@@ -135,23 +135,39 @@ contract FlightSuretyData {
   event RegisterAirline(
     address airline,  AirlineState as1,
     address reqBy, AirlineState as2
-  ); 
+  );
+
+  /**
+  * @dev Initial funding for the insurance. Unless there are too many delayed
+  *      flights resulting in insurance payouts, the contract should be
+  *      self-sustaining
+  */
+  event Funded(address airline, uint256 value);
+  function fund(address airline) isCallerAuthorized external payable
+  {
+    require(airlines[airline] != AirlineState.Funded,
+      "Airline previously funded");
+    require(airlines[airline] == AirlineState.Registered,
+      "Airline not registered");
+    airlines[airline] = AirlineState.Funded;
+    emit Funded(airline, msg.value);
+  }
 
   /**
   * @dev Add an airline to the registration queue
   *      Can only be called from FlightSuretyApp contract
-  */   
-  function registerAirline(address airline, address requestedBy) 
+  */
+  function registerAirline(address airline, address requestedBy)
     external isCallerAuthorized requireIsOperational
   {
-    /*
-    require(airlines[requestedBy] == AirlineState.Funded, 
+
+    require(airlines[requestedBy] == AirlineState.Funded,
       "only funded airlines may register a new airline");
     require(airlines[airline] != AirlineState.Registered,
       "Airline previously registered");
     require(airlines[airline] != AirlineState.Funded,
-      "Airline previously registered and funed"); 
-    */
+      "Airline previously registered and funed");
+
     airlines[airline] = AirlineState.Registered;
 
     emit RegisterAirline(
@@ -162,46 +178,51 @@ contract FlightSuretyData {
 
   event RegisteredFlight(address airline, string flight, uint256 timestamp);
   function registerFlight(address airline, string flight, uint256 timestamp)
-    external isCallerAuthorized
+    external isCallerAuthorized requireAirlineFunded(airline)
   {
     bytes32 flightKey = getFlightKey(airline, flight, timestamp);
-    insuredFlight[flightKey] = true;
+    insuredFlight[flightKey].insured = true;
     emit RegisteredFlight(airline, flight, timestamp);
   }
 
 
   /**
   * @dev Buy insurance for a flight
-  */   
-  event Buy(address airline, string flight, uint256 timestamp, address passanger, uint256 amount);
-  function buy(address airline, string flight, uint256 timestamp, address passanger)
+  */
+  event Buy(address airline, string flight, uint256 timestamp,
+    address passanger, uint256 amount);
+  function buy(address airline, string flight, uint256 timestamp,
+    address passanger)
       external payable requireAirlineFunded(airline)
   {
     bytes32 flightKey = getFlightKey(airline, flight, timestamp);
-    require(insuredFlight[flightKey] == true, "Flight not insured");
+    require(insuredFlight[flightKey].insured == true, "Flight not insured");
     bytes32 passangerKey = getPassangerKey(passanger, flightKey);
-    require(insuredPassanger[passangerKey] == 0, 
+    require(insuredPassanger[passangerKey] != true,
       'Insurance previouly purchased for flight');
-    flightKey2Passangers[flightKey].push(passanger);
-    insuredPassanger[passangerKey] = msg.value;
+    insuredFlight[flightKey].passangers.push(Passanger(passanger, msg.value));
+    insuredPassanger[passangerKey] = true;
     emit Buy(airline, flight, timestamp, passanger, msg.value);
   }
 
   /**
     *  @dev Credits payouts to insurees
   */
+  event CreditInsuree(address airline, string flight, uint256 timestamp);
   function creditInsurees(address airline, string flight, uint256 timestamp)
     external requireAirlineFunded(airline)
   {
     bytes32 flightKey = getFlightKey(airline, flight, timestamp);
-    require (insuredFlight[flightKey] == true, "flight not insured");
-    address[] memory passangers = flightKey2Passangers[flightKey];
-    for (uint i; i < passangers.length; i++) {
-      address passanger = passangers[i];
-      bytes32 passangerKey = getPassangerKey(passanger, flightKey);
-      uint256 refundAmount = insuredPassanger[passangerKey];
+    require (insuredFlight[flightKey].insured == true,
+       "flight not insured");
+    for (uint i=0; i < insuredFlight[flightKey].passangers.length; i++) {
+      insurancePayout[insuredFlight[flightKey].passangers[i].adr] +=
+        insuredFlight[flightKey].passangers[i].amount;
+      bytes32 passangerKey = getPassangerKey(
+        insuredFlight[flightKey].passangers[i].adr, flightKey);
       delete insuredPassanger[passangerKey];
-      insurancePayout[passanger].add(refundAmount);
+      emit CreditInsuree(insuredFlight[flightKey].passangers[i].adr,
+        flight, insuredFlight[flightKey].passangers[i].amount);
     }
     delete insuredFlight[flightKey];
   }
@@ -209,59 +230,38 @@ contract FlightSuretyData {
   /**
     *  @dev Clear payouts to insurees
   */
+  event ClearInsurees(address airline, string flight, uint256 timestamp);
   function clearInsurees(address airline, string flight, uint256 timestamp)
     external requireAirlineFunded(airline)
   {
     bytes32 flightKey = getFlightKey(airline, flight, timestamp);
     delete insuredFlight[flightKey];
+    emit ClearInsurees(airline, flight, timestamp);
   }
 
+  function passangerCredit(address passanger) external view
+    returns (uint256 credit)
+  {
+    return insurancePayout[passanger];
+  }
   /**
     *  @dev Transfers eligible payout funds to insuree
   */
   event Pay(address passanger, uint256 amount);
-  function pay(uint256 n, uint256 d, address passanger) external payable requirePassangerFunded()
+  function pay(uint256 n, uint256 d, address passanger) external
+    payable requirePassangerFunded(passanger)
   {
-    uint payout = insurancePayout[msg.sender].mul(n).div(d);
-    delete insurancePayout[msg.sender];
+    uint payout = insurancePayout[passanger].mul(n).div(d);
+    delete insurancePayout[passanger];
     passanger.transfer(payout);
     emit Pay(passanger, payout);
   }
 
   /**
-  * @dev Initial funding for the insurance. Unless there are too many delayed
-  *      flights resulting in insurance payouts, the contract should be
-  *      self-sustaining
-  */   
-  event Funded(address airline, uint256 value);
-  function fund(address airline) external payable
-  {
-    require(airlines[airline] != AirlineState.Funded,
-      "Airline previously funded");
-    require(airlines[airline] == AirlineState.Registered,
-      "Airline not registered");
-    airlines[airline] = AirlineState.Funded;
-    emit Funded(airline, msg.value);
-  }
-
-  function getFlightKey ( 
-    address airline, string memory flight, uint256 timestamp 
-  ) pure internal returns(bytes32) 
-  {
-    return keccak256(abi.encodePacked(airline, flight, timestamp));
-  }
-
-  function getPassangerKey (address passanger, bytes32 flightKey) 
-    pure internal returns(bytes32) 
-  {
-    return keccak256(abi.encodePacked(passanger, flightKey));
-  }
-  
-  /**
   * @dev Fallback function for funding smart contract.
   *
   */
-  function() external payable 
+  function() external payable
   {
   }
 }
