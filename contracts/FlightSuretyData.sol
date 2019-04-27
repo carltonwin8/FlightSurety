@@ -19,6 +19,7 @@ contract FlightSuretyData {
   mapping(bytes32 => Flight) insuredFlight;
   mapping(bytes32 => bool) insuredPassanger;
   mapping(address => uint256) insurancePayout;
+  uint8 private nonce = 0; // for pseduo-randomness
   /*************************************************************************/
   /*                                       EVENT DEFINITIONS                /
   /*************************************************************************/
@@ -96,6 +97,13 @@ contract FlightSuretyData {
     return false;
   }
 
+  function isAirline(address airline) public view requireContractOwner
+    returns(bool)
+  {
+    if (airlines[airline] == AirlineState.Unregistered) return false;
+    return true;
+  }
+
   /**
   * @dev Sets contract operations on/off
   * When operational mode is disabled, all write transactions except for this
@@ -119,6 +127,18 @@ contract FlightSuretyData {
     return keccak256(abi.encodePacked(passanger, flightKey));
   }
 
+  function getRandomVote ( address account, uint8 no ) internal returns (uint8)
+  {
+    uint8 maxValue = 2;
+
+    uint8 random = uint8(uint256(keccak256(abi.encodePacked(
+      blockhash(block.number - nonce++), account, no))) % maxValue);
+
+    if (nonce > 250) {
+      nonce = 0;
+    }
+    return random;
+  }
   /*************************************************************************/
   /*                                     SMART CONTRACT FUNCTIONS           /
   /*************************************************************************/
@@ -132,17 +152,12 @@ contract FlightSuretyData {
     delete authorizedContracts[adr];
   }
 
-  event RegisterAirline(
-    address airline,  AirlineState as1,
-    address reqBy, AirlineState as2
-  );
-
   /**
   * @dev Initial funding for the insurance. Unless there are too many delayed
   *      flights resulting in insurance payouts, the contract should be
   *      self-sustaining
   */
-  event Funded(address airline, uint256 value);
+  event Funded(address airline, uint256 value, uint8 airlinesNo);
   function fund(address airline) isCallerAuthorized external payable
   {
     require(airlines[airline] != AirlineState.Funded,
@@ -150,13 +165,19 @@ contract FlightSuretyData {
     require(airlines[airline] == AirlineState.Registered,
       "Airline not registered");
     airlines[airline] = AirlineState.Funded;
-    emit Funded(airline, msg.value);
+    airlinesNo += 1; // funded airlines are allowed to vote
+    emit Funded(airline, msg.value, airlinesNo);
   }
 
   /**
   * @dev Add an airline to the registration queue
   *      Can only be called from FlightSuretyApp contract
   */
+  event RegAirVotePer(string msg, uint8 percent);
+  event RegisterAirline(
+    address airline,  AirlineState as1,
+    address reqBy, AirlineState as2, uint8 votePercent
+  );
   function registerAirline(address airline, address requestedBy)
     external isCallerAuthorized requireIsOperational
   {
@@ -168,11 +189,27 @@ contract FlightSuretyData {
     require(airlines[airline] != AirlineState.Funded,
       "Airline previously registered and funed");
 
-    airlines[airline] = AirlineState.Registered;
+    uint8 votePercent = 0;
+
+    if (airlinesNo < 5) {
+      votePercent = 100;
+    } else {
+      for (uint8 i=0; i < airlinesNo; i++) {
+        emit RegAirVotePer("pre", votePercent);
+        votePercent += getRandomVote(airline, i);
+        emit RegAirVotePer("post", votePercent);
+      }
+      // +2 positive weight for vote
+      votePercent = (votePercent + 2) * 100 / airlinesNo;
+    }
+
+    if (votePercent > 50) {
+      airlines[airline] = AirlineState.Registered;
+    }
 
     emit RegisterAirline(
       airline,  airlines[airline],
-      requestedBy, airlines[requestedBy]
+      requestedBy, airlines[requestedBy], votePercent
     );
 }
 
