@@ -91,14 +91,13 @@ Key for the tables below follows
 
 ### FlightSuretyData.sol
 
-| Modifiers               | SF  | ToDo |
-| ----------------------- | --- | ---- |
-| requireIsOperational    | io  | -    |
-| requireContractOwner    | co  | -    |
-| isCallerAuthorized      | ca  | -    |
-| requireAirlineFunded    | af  | -    |
-| requireFlightRegistered | fr  | todo |
-| requirePassangerFunded  | pf  | -    |
+| Modifiers              | SF  | ToDo |
+| ---------------------- | --- | ---- |
+| requireIsOperational   | io  | -    |
+| requireContractOwner   | co  | -    |
+| isCallerAuthorized     | ca  | -    |
+| requireAirlineFunded   | af  | -    |
+| requirePassangerFunded | pf  | -    |
 
 | Functions          | I/E | MR     |
 | ------------------ | --- | ------ |
@@ -120,11 +119,10 @@ Key for the tables below follows
 
 ### FlightSuretyApp.sol
 
-| Modifiers                | SF  | ToDo |
-| ------------------------ | --- | ---- |
-| requireIsOperational     | io  | -    |
-| requireContractOwner     | co  | -    |
-| requireAirlineRegistered | ar  | todo |
+| Modifiers            | SF  |
+| -------------------- | --- |
+| requireIsOperational | io  |
+| requireContractOwner | co  |
 
 CB - called by
 
@@ -140,14 +138,14 @@ CB - called by
 | registerAirline      | e   | co  | cg, ct | -    |
 | fundAirline          | e   | -   | cg, ct | -    |
 | registerFlight       | e   | -   | cg,    | ct   |
-| buy                  | e   | -   | tbd    |
-| processFlightStatus  | e   | -   | tbd    |
-| fetchFlightStatus    | e   | -   | tbd    |
-| claimInsurance       | e   | -   | tbd    |
-| passangerCredit      | e   | -   | tbd    |
-| getNoOracles         | e   | -   | tbd    |
-| registerOracle       | e   | -   | tbd    |
-| getMyIndexes         | e   | -   | tbd    |
-| submitOracleResponse | e   | -   | tbd    |
-| generateIndexes      | i   | -   | -      |
-| getRandomIndex       | i   | -   | -      |
+| buy                  | e   | -   | cg     | ct   |
+| processFlightStatus  | i   | -   | -      | -    |
+| fetchFlightStatus    | e   | -   | cg, ct | -    |
+| claimInsurance       | e   | -   | cg     | ct   |
+| passangerCredit      | e   | -   | cg     | ct   |
+| getNoOracles         | e   | -   | ct, s  | -    |
+| registerOracle       | e   | -   | ct, s  | -    |
+| getMyIndexes         | e   | -   | ct, s  | -    |
+| submitOracleResponse | e   | -   | ct, s  | -    |
+| generateIndexes      | i   | -   | -      | -    |
+| getRandomIndex       | i   | -   | -      | -    |

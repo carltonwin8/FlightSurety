@@ -180,6 +180,8 @@ contract FlightSuretyData {
   function registerFlight(address airline, string flight, uint256 timestamp)
     external isCallerAuthorized requireAirlineFunded(airline)
   {
+    require(insuredFlight[flightKey].insured == false,
+    "flight already insured");
     bytes32 flightKey = getFlightKey(airline, flight, timestamp);
     insuredFlight[flightKey].insured = true;
     emit RegisteredFlight(airline, flight, timestamp);
