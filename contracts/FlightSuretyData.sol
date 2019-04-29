@@ -98,10 +98,9 @@ contract FlightSuretyData {
   }
 
   function isAirline(address airline) public view requireContractOwner
-    returns(bool)
+    returns(AirlineState)
   {
-    if (airlines[airline] == AirlineState.Unregistered) return false;
-    return true;
+    return airlines[airline];
   }
 
   /**
@@ -129,7 +128,7 @@ contract FlightSuretyData {
 
   function getRandomVote ( address account, uint8 no ) internal returns (uint8)
   {
-    uint8 maxValue = 2;
+    uint8 maxValue = 100;
 
     uint8 random = uint8(uint256(keccak256(abi.encodePacked(
       blockhash(block.number - nonce++), account, no))) % maxValue);
@@ -158,7 +157,8 @@ contract FlightSuretyData {
   *      self-sustaining
   */
   event Funded(address airline, uint256 value, uint8 airlinesNo);
-  function fund(address airline) isCallerAuthorized external payable
+  function fund(address airline) isCallerAuthorized requireIsOperational
+    external payable
   {
     require(airlines[airline] != AirlineState.Funded,
       "Airline previously funded");
@@ -173,10 +173,9 @@ contract FlightSuretyData {
   * @dev Add an airline to the registration queue
   *      Can only be called from FlightSuretyApp contract
   */
-  event RegAirVotePer(string msg, uint8 percent);
   event RegisterAirline(
     address airline,  AirlineState as1,
-    address reqBy, AirlineState as2, uint8 votePercent
+    address reqBy, AirlineState as2, uint votePercent
   );
   function registerAirline(address airline, address requestedBy)
     external isCallerAuthorized requireIsOperational
@@ -189,23 +188,21 @@ contract FlightSuretyData {
     require(airlines[airline] != AirlineState.Funded,
       "Airline previously registered and funed");
 
-    uint8 votePercent = 0;
+    uint votePercent = 0;
 
     if (airlinesNo < 5) {
       votePercent = 100;
     } else {
       for (uint8 i=0; i < airlinesNo; i++) {
-        emit RegAirVotePer("pre", votePercent);
         votePercent += getRandomVote(airline, i);
-        emit RegAirVotePer("post", votePercent);
       }
-      // +2 positive weight for vote
-      votePercent = (votePercent + 2) * 100 / airlinesNo;
+      votePercent = votePercent / airlinesNo;
     }
 
-    if (votePercent > 50) {
-      airlines[airline] = AirlineState.Registered;
-    }
+    require(votePercent > 50,
+      "Multi Party Consensus rejected airline registration");
+
+    airlines[airline] = AirlineState.Registered;
 
     emit RegisterAirline(
       airline,  airlines[airline],
@@ -215,7 +212,8 @@ contract FlightSuretyData {
 
   event RegisteredFlight(address airline, string flight, uint256 timestamp);
   function registerFlight(address airline, string flight, uint256 timestamp)
-    external isCallerAuthorized requireAirlineFunded(airline)
+    external isCallerAuthorized requireIsOperational
+    requireAirlineFunded(airline)
   {
     require(insuredFlight[flightKey].insured == false,
     "flight already insured");
@@ -232,7 +230,7 @@ contract FlightSuretyData {
     address passanger, uint256 amount);
   function buy(address airline, string flight, uint256 timestamp,
     address passanger)
-      external payable requireAirlineFunded(airline)
+      external payable requireIsOperational requireAirlineFunded(airline)
   {
     bytes32 flightKey = getFlightKey(airline, flight, timestamp);
     require(insuredFlight[flightKey].insured == true, "Flight not insured");
@@ -249,7 +247,7 @@ contract FlightSuretyData {
   */
   event CreditInsuree(address airline, string flight, uint256 timestamp);
   function creditInsurees(address airline, string flight, uint256 timestamp)
-    external requireAirlineFunded(airline)
+    external requireIsOperational requireAirlineFunded(airline)
   {
     bytes32 flightKey = getFlightKey(airline, flight, timestamp);
     require (insuredFlight[flightKey].insured == true,
@@ -271,7 +269,7 @@ contract FlightSuretyData {
   */
   event ClearInsurees(address airline, string flight, uint256 timestamp);
   function clearInsurees(address airline, string flight, uint256 timestamp)
-    external requireAirlineFunded(airline)
+    external requireIsOperational requireAirlineFunded(airline)
   {
     bytes32 flightKey = getFlightKey(airline, flight, timestamp);
     delete insuredFlight[flightKey];
@@ -288,7 +286,7 @@ contract FlightSuretyData {
   */
   event Pay(address passanger, uint256 amount);
   function pay(uint256 n, uint256 d, address passanger) external
-    payable requirePassangerFunded(passanger)
+    payable requireIsOperational requirePassangerFunded(passanger)
   {
     uint payout = insurancePayout[passanger].mul(n).div(d);
     delete insurancePayout[passanger];

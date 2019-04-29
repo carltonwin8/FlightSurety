@@ -99,23 +99,23 @@ Key for the tables below follows
 | requireAirlineFunded   | af  | -    |
 | requirePassangerFunded | pf  | -    |
 
-| Functions          | I/E | MR     |
-| ------------------ | --- | ------ |
-| isOperational      | e   | -      |
-| isAuthorized       | e   | -      |
-| setOperatingStatus | e   | co     |
-| getFlightKey       | ip  | -      |
-| getPassangerKey    | ip  | -      |
-| authorizeCaller    | e   | co     |
-| deauthorizeCaller  | e   | co     |
-| fund               | e   | ca     |
-| registerAirline    | e   | ca, af |
-| registerFlight     | e   | ca, af |
-| buy                | e   | ca, fr |
-| creditInsurees     | e   | ca, fr |
-| clearInsurees      | e   | ca, fr |
-| passangerCredit    | e   | -      |
-| pay                | e   | ca, pf |
+| Functions          | I/E | MR         |
+| ------------------ | --- | ---------- |
+| isOperational      | e   | -          |
+| isAuthorized       | e   | -          |
+| setOperatingStatus | e   | co         |
+| getFlightKey       | ip  | -          |
+| getPassangerKey    | ip  | -          |
+| authorizeCaller    | e   | co         |
+| deauthorizeCaller  | e   | co         |
+| fund               | e   | io, ca     |
+| registerAirline    | e   | io, ca, af |
+| registerFlight     | e   | io ca, af  |
+| buy                | e   | io, ca, fr |
+| creditInsurees     | e   | io, ca, fr |
+| clearInsurees      | e   | io, ca, fr |
+| passangerCredit    | e   | -          |
+| pay                | e   | io, ca, pf |
 
 ### FlightSuretyApp.sol
 

@@ -108,14 +108,12 @@ contract FlightSuretyApp {
   /**************************************************************************/
   /*                                     SMART CONTRACT FUNCTIONS            /
   /**************************************************************************/
-event RegisterAirline(address airline, address requestedBy);
   /**
   * @dev Add an airline to the registration queue
   */
   function registerAirline(address airline) external
     returns(bool success, uint256 votes)
   {
-    emit RegisterAirline(airline, msg.sender);
     flightSuretyData.registerAirline(airline, msg.sender);
     return (success, 0);
   }
