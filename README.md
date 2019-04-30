@@ -6,8 +6,8 @@ A user can:
 
 - buy up to 1 ether of insurance for a fix number of flights,
 - then the user can request the flight status information,
-- a number of oracles generate randomized flight status information,
-- if the flight is late, a user can claim 1.5 the insured amount.
+- a number of oracles generates randomized flight status information,
+- if the flight is late, a user can claim 1.5x the insured amount.
 
 The DAPP was completed for the
 [Udacity Blockchain Term 2 FlightSurety Project](https://www.udacity.com/course/blockchain-developer-nanodegree--nd1309).
@@ -28,7 +28,7 @@ The following software needs to be installed.
   [Address Allocation](#Address-Allocation)
   section below.
 
-The software version numbers used during test are noted below.
+The software version numbers used during testing are noted below.
 
 - Truffle v5.0.11 (core: 5.0.11)
 - Solidity - ^0.4.25 (solc-js)
@@ -41,9 +41,9 @@ The software version numbers used during test are noted below.
 
 Test suits can be run buy:
 
-- starting the block chain via `npm run gcli`
-- testing the airline, flight, passanger functionality by `npm run test`
-- testing the oracle functionality by `npm run testo`
+- start the block chain via `npm run gcli`
+- test the airline, flight and passanger functionality by `npm run test`
+- test the oracle functionality by `npm run testo`
 
 In order to test this application via the web GUI do the following:
 
@@ -57,22 +57,22 @@ Verify the FlightSurety operations in the browser by doing the following:
 
 - click `Fund Airline`
 - click `Register Airline`
-- click `Register flight`
-- clicke `Buy Insurance`
+- click `Register Flight`
+- click `Buy Insurance`
 - click `Flight Status`
 - click `View Credit`
 - click `Claim Insurance`
 
-After clicking the buttons above a status is show that can be cleared.
-Also balance for the two contracts and user are shown and can be
-seen to change during the transactions tha require funding.
+After clicking the buttons above a status is shown that can be cleared.
+The balance for the two contracts and users are shown and are updated
+realtime for transactions that require funding.
 
 ## Address Allocation
 
 During testing the mnemonic
 "candy maple cake sugar pudding cream honey rich smooth crumble sweet treat"
-was used to gererate the sequential addresses whoes indexes are noted below.
-The allocation of the address follows.
+was used to gererate the sequential addresses whose indexes are noted below.
+The allocation of the address follows and are in `./src/server/addressInfo.js`.
 
 | Address | Usage                        |
 | ------- | ---------------------------- |
