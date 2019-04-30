@@ -60,11 +60,13 @@ let Oracles;
               const oracleInfo = oraclesInfo[i];
               const oIdx = oracleInfo.indexs;
               if (idx === oIdx[0] || idx === oIdx[1] || idx === oIdx[2]) {
-                //const airlineStatus = Math.floor(Math.random() * 5) * 10;
-                // line below for debug
+                const airlineStatus = Math.floor(Math.random() * 5) * 10;
+                // commented lines below for debug
+                /*
                 const airlineStatus = Flights.filter(
                   f => f.number === flight
                 )[0].status;
+                */
                 console.log(
                   `${i} - ${idx} in ${oIdx} for oracle ${
                     oracleInfo.address

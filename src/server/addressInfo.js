@@ -63,7 +63,7 @@ const getFlights = (addresses, startIndex = 1) => {
 };
 
 const getOracles = (addresses, startIndex = 10) => {
-  const flights = Array(20).fill(null);
+  const flights = Array(30).fill(null);
   if (addressesIsInvalid(addresses, startIndex, flights, "getAirlines"))
     return null;
   return assignAddresses(addresses, startIndex, flights);

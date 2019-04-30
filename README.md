@@ -39,7 +39,13 @@ The software version numbers used during test are noted below.
 
 ## Testing Method
 
-In order to test this application do the following:
+Test suits can be run buy:
+
+- starting the block chain via `npm run gcli`
+- testing the airline, flight, passanger functionality by `npm run test`
+- testing the oracle functionality by `npm run testo`
+
+In order to test this application via the web GUI do the following:
 
 - Start the block chain via `npm run gcli`.
 - Deploy the contract to the block chain via `truffle deploy`.
@@ -47,10 +53,19 @@ In order to test this application do the following:
 - Start the client via `npm run dapp`.
 - Open a web browser to http://localhost:8000
 
-Verify the FlightSurety operations on the browser by doing the following:
+Verify the FlightSurety operations in the browser by doing the following:
 
-- click
-- etc
+- click `Fund Airline`
+- click `Register Airline`
+- click `Register flight`
+- clicke `Buy Insurance`
+- click `Flight Status`
+- click `View Credit`
+- click `Claim Insurance`
+
+After clicking the buttons above a status is show that can be cleared.
+Also balance for the two contracts and user are shown and can be
+seen to change during the transactions tha require funding.
 
 ## Address Allocation
 
